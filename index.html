@@ -943,17 +943,19 @@ function toggleMusic(){
 }
 
 /* ============ PROCEDURAL Y2K HANDS-UP / TRANCE TRACK ============
-   138 BPM, 88 bars = 2:36, loops seamlessly (cycle 2 mirrors cycle 1
+   138 BPM, 84 bars = 2:30, loops seamlessly (cycle 2 mirrors cycle 1
    on the same chord progression with a second melody).
-   Arrangement: intro -> groove A -> breakdown -> build -> DROP ->
-   groove B -> bridge -> build -> DROP -> outro (-> intro, loop).
+   No intro / no outro — the loop point goes straight from the last
+   drop back into groove A at full energy, so the music is constant.
+   Arrangement: groove A -> breakdown -> build -> DROP ->
+   groove B -> bridge -> build -> DROP -> (loop).
    Supersaw stabs/lead/pads (5 detuned saws, JP-8000 style), 909-style
    kick with sidechain pump, offbeat punchy bass, dotted-8th delay,
    snare rolls, noise risers, crash + tambourine. Am-F-C-G.         */
 const M={
   on:false, step:0, nextT:0, timer:null,
   bpm:138,
-  totalBars:88,
+  totalBars:84,
   chords:[
     {b:33, pad:[57,60,64]},  // Am
     {b:29, pad:[53,57,60]},  // F
@@ -964,11 +966,11 @@ const M={
   melB:[72,76,79,77, 76,72,71,72, 69,72,76,77, 79,77,76,74],
   // section table: [startBar, endBar, name]
   sections:[
-    [0,2,"intro"],[2,10,"grooveA"],[10,14,"break"],[14,16,"build"],
-    [16,24,"drop1"],[24,32,"grooveB"],[32,36,"bridge"],[36,38,"build2"],
-    [38,46,"drop2"],[46,50,"grooveB2"],[50,54,"break2"],[54,56,"build3"],
-    [56,64,"drop3"],[64,72,"grooveB3"],[72,76,"bridge2"],[76,78,"build4"],
-    [78,86,"drop4"],[86,88,"outro"],
+    [0,8,"grooveA"],[8,12,"break"],[12,14,"build"],
+    [14,22,"drop1"],[22,30,"grooveB"],[30,34,"bridge"],[34,36,"build2"],
+    [36,44,"drop2"],[44,48,"grooveB2"],[48,52,"break2"],[52,54,"build3"],
+    [54,62,"drop3"],[62,70,"grooveB3"],[70,74,"bridge2"],[74,76,"build4"],
+    [76,84,"drop4"],
   ],
   delay:null,
 };
@@ -980,7 +982,6 @@ function sectionAt(bar){
 function melodyFor(section,step){
   const m16=step%16;
   if(section==="grooveA"||section==="break"||section==="build")return M.melA[m16];
-  if(section==="outro")return M.melA[m16];
   return M.melB[m16];
 }
 function buildGraph(){
@@ -1124,12 +1125,7 @@ function scheduleStep(step,t){
   const bar16=bar%16, s16=step%16, s8=step%8;
   const barDur=60/M.bpm*4;
   const sec=sectionAt(bar);
-  if(sec==="intro"){
-    if(s16%4===0)kick(t);
-    if(s16%2===1)hat(t,.12);
-    if(s16===0)padChord(t,step,barDur*.95);
-    if(s16%4===0)stab(t,step,.07);
-  }else if(sec==="grooveA"||sec==="grooveB"||sec==="grooveB2"||sec==="grooveB3"){
+  if(sec==="grooveA"||sec==="grooveB"||sec==="grooveB2"||sec==="grooveB3"){
     if(s16%4===0)kick(t);
     if(s16===4)clap(t);
     if(s16%2===1)hat(t,.16);
@@ -1153,7 +1149,7 @@ function scheduleStep(step,t){
     if(s16===0)noiseRiser(t,barDur*.95);
     if(s16%4===0)leadNote(t,step,.14,400+bi*800+s16*60);
   }else if(sec==="drop1"||sec==="drop2"||sec==="drop3"||sec==="drop4"){
-    if(bar===16||bar===38||bar===56||bar===78)crash(t);
+    if(bar===14||bar===36||bar===54||bar===76)crash(t);
     if(s16%4===0)kick(t);
     if(s16===4)clap(t);
     if(s16%2===1)hat(t,.18);
@@ -1163,12 +1159,6 @@ function scheduleStep(step,t){
     if(s16%8===4)stab(t,step,.18);
     if(s16%2===0)leadNote(t,step,.15);
     if(s16%4===2)leadNote(t,step+13,.09);
-  }else if(sec==="outro"){
-    if(s16%4===0)kick(t);
-    if(s16%2===1)hat(t,.12);
-    if(s16===0)padChord(t,step,barDur*.95);
-    if(s16%4===0)leadNote(t,step,.09);
-    if(bar===86)crash(t,.2);
   }
 }
 function musicTick(){
