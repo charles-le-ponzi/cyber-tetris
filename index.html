@@ -221,43 +221,56 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
 }
 #touch button:active{background:rgba(0,240,255,.25)}
 @media (pointer:coarse){ #touch{display:flex} .keys{display:none} }
-/* ============ MOBILE LAYOUT ============
-   Portrait / narrow: stack vertically — stats row, board, hold/next row.
-   The board keeps its 1:2 aspect ratio and sizes to the width.        */
+/* ============ MOBILE LAYOUT (v2) ============ */
+#statsStrip,#holdNext{display:none}
 @media (max-width:760px), (orientation:portrait) and (max-width:920px){
-  #topbar{height:46px;padding:0 14px}
-  #logo{font-size:19px;letter-spacing:.08em}
+  body{overflow:hidden;align-items:center;justify-content:center}
+  #topbar{height:44px;padding:0 12px}
+  #logo{font-size:18px;letter-spacing:.08em}
   #sysinfo{display:none}
-  #stage{flex-direction:column;gap:8px;padding:8px;align-items:center}
-  #sideL,#sideR{align-items:stretch}
-  .side{flex-direction:row;width:100%;max-width:430px;gap:8px}
-  .side .panel{flex:1;min-width:0}
-  .side .panel .inner{padding:6px 8px}
-  .label{font-size:9px;margin-bottom:4px}
-  #pScore{order:1}
-  #pLevel{order:2}
-  #pSys{order:3}
-  #sideL{order:1;flex-wrap:wrap}
-  #boardWrap{order:2;width:100%;max-width:300px}
-  #sideR{order:3}
-  #pHold{order:1}
-  #pNext{order:2}
-  #scoreBig{font-size:18px;margin-bottom:4px}
-  #pScore .inner{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px}
-  #pScore .label{grid-column:1/-1}
-  #pScore #scoreBig{grid-column:1/-1}
-  .stat{margin-bottom:2px}
-  .stat .v{font-size:11px}
-  .stat .k{font-size:7px;letter-spacing:.12em}
-  #levelBarWrap{height:5px}
-  #boardCanvas{width:100%;height:auto}
-  #holdCanvas{height:44px;width:auto}
-  #nextCanvas{height:100px;width:auto}
+  #sideL,#sideR{display:none}
+  #fitWrap{overflow:hidden;min-height:0;flex:1 1 auto;justify-content:flex-start}
+  #stage{flex-direction:column;gap:6px;padding:6px 8px 0;align-items:center;transform:none!important}
+  #boardWrap{width:auto;max-width:280px;order:2}
+  #boardWrap .inner{padding:4px}
+  #boardCanvas{width:48vh;max-width:280px;height:auto;aspect-ratio:1/2;touch-action:none}
+  /* stats strip */
+  #statsStrip{display:flex;width:100%;max-width:280px;gap:5px;order:1}
+  .chip{
+    flex:1;min-width:0;background:var(--panel);border-radius:8px;padding:4px 7px;
+    backdrop-filter:blur(10px);border:1px solid transparent;background-clip:padding-box;
+    display:flex;flex-direction:column;gap:0;
+  }
+  .chip::before{
+    content:"";position:absolute;inset:-1px;border-radius:9px;z-index:-1;
+    background:linear-gradient(135deg,#fff 0%,#9fb4cc 18%,#3a4a63 38%,#c9d8ea 55%,#5a6b85 75%,#e8f1ff 100%);
+    background-size:300% 300%;animation:chromeShift 8s ease-in-out infinite;
+  }
+  .chip .ck{font-family:'Orbitron',sans-serif;font-size:7px;letter-spacing:.18em;color:rgba(180,210,255,.55);text-transform:uppercase}
+  .chip .cv{font-family:'Orbitron',monospace;font-weight:700;font-size:13px;color:#fff;text-shadow:0 0 10px rgba(0,240,255,.7);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chip .cv.gold{color:var(--gold);text-shadow:0 0 10px rgba(255,217,59,.7)}
+  .chip.wide{flex:1.6}
+  .chip .bar{height:3px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:2px;border:1px solid rgba(0,240,255,.25)}
+  .chip .bar i{display:block;height:100%;width:0%;border-radius:2px;transition:width .3s ease;background:linear-gradient(90deg,var(--violet),var(--magenta),var(--cyan));box-shadow:0 0 8px rgba(255,47,214,.8)}
+  /* hold / next row */
+  #holdNext{display:flex;width:100%;max-width:170px;gap:6px;order:3}
+  #holdNext .panel{flex:1;min-width:0;padding:6px}
+  #holdNext .panel .inner{padding:4px 6px}
+  #holdNext .label{font-size:8px;margin-bottom:3px}
+  #holdNext canvas.mini{width:100%;height:auto}
+  /* touch controls — in normal flow, below hold/next */
+  #touch{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%;max-width:340px;order:4;padding:4px 8px 10px;flex-wrap:nowrap}
+  #touch button{
+    width:100%;height:44px;border-radius:10px;border:1px solid rgba(0,240,255,.4);
+    background:rgba(10,4,26,.7);color:var(--cyan);font-size:16px;font-family:'Orbitron',sans-serif;
+    backdrop-filter:blur(8px);box-shadow:0 0 14px rgba(0,240,255,.2);
+    touch-action:manipulation;
+  }
+  #touch button:active{background:rgba(0,240,255,.25)}
+  .keys{display:none}
   .overlay h2{font-size:22px}
   .overlay p{font-size:11px;line-height:1.9}
-  .btn{padding:10px 22px;font-size:11px}
-  #touch{gap:6px;bottom:6px}
-  #touch button{width:44px;height:44px;font-size:17px;border-radius:12px}
+  .btn{padding:11px 24px;font-size:12px;touch-action:manipulation}
 }
 </style>
 </head>
@@ -279,6 +292,13 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
 </header>
 
 <div id="fitWrap"><main id="stage">
+  <!-- MOBILE: stats strip (hidden on desktop) -->
+  <div id="statsStrip">
+    <div class="chip wide"><span class="ck">Score</span><span class="cv" id="msScore">0000000</span></div>
+    <div class="chip"><span class="ck">Level</span><span class="cv" id="msLevel">01</span><div class="bar"><i id="msLevelBar"></i></div></div>
+    <div class="chip"><span class="ck">Lines</span><span class="cv" id="msLines">0000</span></div>
+    <div class="chip"><span class="ck">High</span><span class="cv gold" id="msHigh">0000000</span></div>
+  </div>
   <!-- LEFT: score / level / sys -->
   <div class="side" id="sideL">
     <div class="panel" id="pScore"><div class="inner">
@@ -332,6 +352,18 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
     </div>
   </div></div>
 
+  <!-- MOBILE: hold / next row (hidden on desktop) -->
+  <div id="holdNext">
+    <div class="panel" id="pHoldM"><div class="inner">
+      <div class="label">Hold</div>
+      <canvas class="mini" id="holdCanvasM" width="120" height="72"></canvas>
+    </div></div>
+    <div class="panel" id="pNextM"><div class="inner">
+      <div class="label">Next</div>
+      <canvas class="mini" id="nextCanvasM" width="120" height="216"></canvas>
+    </div></div>
+  </div>
+
   <!-- RIGHT: hold / next -->
   <div class="side" id="sideR">
     <div class="panel" id="pHold"><div class="inner">
@@ -368,12 +400,29 @@ const $=id=>document.getElementById(id);
 const boardCanvas=$("boardCanvas"), bctx=boardCanvas.getContext("2d");
 const holdCanvas=$("holdCanvas"), hctx=holdCanvas.getContext("2d");
 const nextCanvas=$("nextCanvas"), nctx=nextCanvas.getContext("2d");
+const holdCanvasM=$("holdCanvasM"), hctxM=holdCanvasM.getContext("2d");
+const nextCanvasM=$("nextCanvasM"), nctxM=nextCanvasM.getContext("2d");
 const dpr=Math.min(window.devicePixelRatio||1,2);
 
 function fitCanvas(c,w,h){c.width=w*dpr;c.height=h*dpr;c.style.width=w+"px";c.style.height=h+"px";c.getContext("2d").setTransform(dpr,0,0,dpr,0,0);}
-fitCanvas(boardCanvas,COLS*CELL,ROWS*CELL);
+function fitBoard(){
+  const isMobile=window.matchMedia("(max-width:760px), (orientation:portrait) and (max-width:920px)").matches;
+  if(isMobile){
+    // CSS controls display size (width:48vh, aspect-ratio:1/2); we only set the
+    // backing resolution so drawing stays crisp.
+    const dispW=boardCanvas.getBoundingClientRect().width||240;
+    const w=Math.max(120,Math.floor(dispW)), h=Math.floor(w*2);
+    boardCanvas.width=w*dpr;boardCanvas.height=h*dpr;
+    bctx.setTransform(dpr,0,0,dpr,0,0);
+  }else{
+    fitCanvas(boardCanvas,COLS*CELL,ROWS*CELL);
+  }
+}
+fitBoard();
 fitCanvas(holdCanvas,120,72);
 fitCanvas(nextCanvas,120,216);
+fitCanvas(holdCanvasM,120,72);
+fitCanvas(nextCanvasM,120,216);
 
 /* ---------------- pieces & SRS ---------------- */
 const SHAPES={
@@ -652,6 +701,39 @@ $("touch").addEventListener("pointerup",e=>{
   if(b.dataset.act==="left")release("left");
   if(b.dataset.act==="right")release("right");
   if(b.dataset.act==="down")release("down");
+});
+/* swipe gestures on board */
+let sw=null;
+boardCanvas.addEventListener("pointerdown",e=>{
+  sw={x:e.clientX,y:e.clientY,t:performance.now(),moved:false};
+  boardCanvas.setPointerCapture(e.pointerId);
+});
+boardCanvas.addEventListener("pointermove",e=>{
+  if(!sw||G.state!=="playing")return;
+  const dx=e.clientX-sw.x, dy=e.clientY-sw.y;
+  const step=boardCanvas.clientWidth/COLS;
+  if(!sw.moved){
+    if(Math.abs(dx)>step*.4&&Math.abs(dx)>Math.abs(dy)){sw.moved=true;sw.dir=dx>0?"right":"left";sw.lastX=e.clientX;press(sw.dir);}
+    else if(dy>step*.4&&dy>Math.abs(dx)){sw.moved=true;sw.dir="down";sw.lastY=e.clientY;press("down");}
+  }else if(sw.dir==="right"||sw.dir==="left"||sw.dir==="down"){
+    if(sw.dir==="right"||sw.dir==="left"){
+      const s=sw.dir==="right"?1:-1;
+      while(s*(e.clientX-sw.lastX)>step*.9){sw.lastX+=s*step;tryMove(s,0);}
+    }else{
+      while(e.clientY-sw.lastY>step*.9){sw.lastY+=step;tryMove(0,1)&&softScore();}
+    }
+  }
+});
+boardCanvas.addEventListener("pointerup",e=>{
+  if(!sw)return;
+  if(!sw.moved){
+    // tap = rotate
+    if(G.state==="menu"||G.state==="over")startGame();
+    else if(G.state==="playing")tryRotate(1);
+  }else{
+    release(sw.dir);
+  }
+  sw=null;
 });
 $("startBtn").onclick=()=>{audioInit();startGame();};
 $("retryBtn").onclick=()=>{audioInit();startGame();};
@@ -971,10 +1053,11 @@ function popup(text,color,size=28,dy=0){
   setTimeout(()=>el.remove(),1150);
 }
 function spawnBurst(rowY){
+  const cell=boardCanvas.width/dpr/COLS;
   for(let x=0;x<COLS;x++){
     for(let i=0;i<4;i++){
       G.particles.push({
-        x:(x+.5)*CELL, y:(rowY+.5)*CELL,
+        x:(x+.5)*cell, y:(rowY+.5)*cell,
         vx:(Math.random()-.5)*380, vy:(Math.random()-.9)*320,
         life:.7+Math.random()*.5, t:0,
         c:["#00f0ff","#ff2fd6","#c8ff00","#ffd93b","#ffffff"][Math.floor(Math.random()*5)],
@@ -984,10 +1067,11 @@ function spawnBurst(rowY){
   }
 }
 function spawnDust(p){
+  const cell=boardCanvas.width/dpr/COLS;
   for(const [x,y] of cellsOf(p.shape,p.x,ghostY())){
     if(y<0)continue;
     for(let i=0;i<2;i++)G.particles.push({
-      x:(x+.5)*CELL,y:(y+1)*CELL,vx:(Math.random()-.5)*160,vy:-Math.random()*120,
+      x:(x+.5)*cell,y:(y+1)*cell,vx:(Math.random()-.5)*160,vy:-Math.random()*120,
       life:.35,t:0,c:"rgba(200,230,255,.9)",s:2,
     });
   }
@@ -1027,22 +1111,24 @@ function roundRect(ctx,x,y,w,h,r){
 }
 function drawBoard(){
   const ctx=bctx;
-  ctx.clearRect(0,0,COLS*CELL,ROWS*CELL);
+  const W=boardCanvas.width/dpr, H=boardCanvas.height/dpr;
+  const cell=W/COLS;
+  ctx.clearRect(0,0,W,H);
   // grid lines
   ctx.strokeStyle="rgba(0,240,255,.07)";ctx.lineWidth=1;
-  for(let x=1;x<COLS;x++){ctx.beginPath();ctx.moveTo(x*CELL+.5,0);ctx.lineTo(x*CELL+.5,ROWS*CELL);ctx.stroke();}
-  for(let y=1;y<ROWS;y++){ctx.beginPath();ctx.moveTo(0,y*CELL+.5);ctx.lineTo(COLS*CELL,y*CELL+.5);ctx.stroke();}
+  for(let x=1;x<COLS;x++){ctx.beginPath();ctx.moveTo(x*cell+.5,0);ctx.lineTo(x*cell+.5,H);ctx.stroke();}
+  for(let y=1;y<ROWS;y++){ctx.beginPath();ctx.moveTo(0,y*cell+.5);ctx.lineTo(W,y*cell+.5);ctx.stroke();}
   // settled
   for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)
-    if(G.grid&&G.grid[y][x])drawCell(ctx,x,y,CELL,G.grid[y][x]);
+    if(G.grid&&G.grid[y][x])drawCell(ctx,x,y,cell,G.grid[y][x]);
   // ghost + piece
   if(G.piece&&G.state!=="menu"){
     const p=G.piece;
     const gy=ghostY();
     if(gy>p.y)for(const [x,y] of cellsOf(p.shape,p.x,gy))
-      if(y>=0)drawCell(ctx,x,y,CELL,p.type,true);
+      if(y>=0)drawCell(ctx,x,y,cell,p.type,true);
     for(const [x,y] of cellsOf(p.shape,p.x,p.y))
-      if(y>=0)drawCell(ctx,x,y,CELL,p.type);
+      if(y>=0)drawCell(ctx,x,y,cell,p.type);
   }
   // particles
   for(const pt of G.particles){
@@ -1062,6 +1148,14 @@ function drawMini(){
   nctx.clearRect(0,0,120,216);
   G.queue.slice(0,3).forEach((t,i)=>{
     drawMiniPiece(nctx,t,60,36+i*72,20,i===0?1:.55);
+  });
+  // mobile mirrors
+  hctxM.clearRect(0,0,120,72);
+  if(G.hold)drawMiniPiece(hctxM,G.hold,60,36,20,G.canHold?1:.35);
+  else{hctxM.fillStyle="rgba(160,200,255,.25)";hctxM.font="700 11px Orbitron";hctxM.textAlign="center";hctxM.fillText("EMPTY",60,40);}
+  nctxM.clearRect(0,0,120,216);
+  G.queue.slice(0,3).forEach((t,i)=>{
+    drawMiniPiece(nctxM,t,60,36+i*72,20,i===0?1:.55);
   });
 }
 function drawMiniPiece(ctx,type,cx,cy,size,alpha){
@@ -1100,6 +1194,12 @@ function updateHud(){
   $("speedLbl").textContent=(1000/G.gravityMs).toFixed(1)+"x";
   $("b2bLbl").textContent=G.b2b?"B2B":"--";
   $("b2bLbl").style.color=G.b2b?"#00f0ff":"";
+  // mobile chips
+  $("msScore").textContent=String(Math.floor(G.dispScore)).padStart(7,"0");
+  $("msHigh").textContent=String(Math.max(G.hi,G.score)).padStart(7,"0");
+  $("msLines").textContent=String(G.lines).padStart(4,"0");
+  $("msLevel").textContent=String(G.level).padStart(2,"0");
+  $("msLevelBar").style.width=((G.lines%10)*10)+"%";
 }
 let lastHud=0;
 function tickHud(now){
@@ -1128,15 +1228,16 @@ function loop(now){
   tickHud(now);
 }
 function update(dt){
-  // DAS
+  // DAS (skipped while swipe gestures are driving movement)
   for(const dir of ["left","right"]){
+    if(sw&&sw.dir===dir)continue;
     const k=keys[dir];
     if(!k.held)continue;
     k.t+=dt;
     if(!k.das&&k.t>=DAS){k.das=true;k.t=0;tryMove(dir==="left"?-1:1,0);}
     else if(k.das&&k.t>=ARR){k.t=0;tryMove(dir==="left"?-1:1,0);}
   }
-  if(keys.down.held){
+  if(keys.down.held&&!sw){
     keys.down.t+=dt;
     if(keys.down.t>=SOFT_MS){keys.down.t=0;if(tryMove(0,1))softScore();}
   }
@@ -1165,6 +1266,8 @@ function update(dt){
 }
 /* ---------------- ambient ---------------- */
 function fitStage(){
+  const isMobile=window.matchMedia("(max-width:760px), (orientation:portrait) and (max-width:920px)").matches;
+  if(isMobile)return;
   const wrap=$("fitWrap"), stage=$("stage");
   const r=wrap.getBoundingClientRect();
   stage.style.transform="scale(1)";
@@ -1173,9 +1276,12 @@ function fitStage(){
   const s=Math.min(1, r.width/sw, r.height/sh);
   stage.style.transform="scale("+s+")";
 }
-addEventListener("resize",fitStage);
-addEventListener("load",fitStage);
-setTimeout(fitStage,300);
+addEventListener("resize",()=>{fitBoard();fitStage();});
+addEventListener("load",()=>{fitBoard();fitStage();});
+setTimeout(()=>{fitBoard();fitStage();},300);
+setTimeout(()=>{fitBoard();},1200);
+// keep board backing resolution in sync with CSS display size (orientation, zoom)
+new ResizeObserver(()=>fitBoard()).observe(boardCanvas);
 (function stars(){
   const s=$("stars");
   for(let i=0;i<70;i++){
