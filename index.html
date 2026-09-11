@@ -141,14 +141,14 @@ body{flex-direction:column}
 .label::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--cyan),transparent)}
 .stat{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
 .stat .k{font-size:10px;letter-spacing:.25em;color:rgba(180,210,255,.55);text-transform:uppercase}
-.stat .v{font-family:'Orbitron',monospace;font-weight:700;font-size:20px;color:#fff;text-shadow:0 0 12px rgba(0,240,255,.7)}
+.stat .v{font-family:'Orbitron',monospace;font-weight:700;font-size:14px;color:#fff;text-shadow:0 0 12px rgba(0,240,255,.7);white-space:nowrap}
 .stat .v.gold{color:var(--gold);text-shadow:0 0 12px rgba(255,217,59,.7)}
 #scoreBig{
-  font-family:'Orbitron',monospace;font-weight:900;font-size:34px;line-height:1;
+  font-family:'Orbitron',monospace;font-weight:900;font-size:21px;line-height:1;
   background:linear-gradient(180deg,#fff,#9fe8ff 55%,#00f0ff);
   -webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 0 10px rgba(0,240,255,.6));
-  margin-bottom:14px;font-variant-numeric:tabular-nums;
+  margin-bottom:14px;font-variant-numeric:tabular-nums;letter-spacing:0;
 }
 #levelBarWrap{height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:4px;border:1px solid rgba(0,240,255,.25)}
 #levelBar{height:100%;width:0%;border-radius:4px;transition:width .3s ease;
