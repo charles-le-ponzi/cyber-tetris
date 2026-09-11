@@ -784,8 +784,11 @@ function startGame(){
   if(musicOn)musicStart();
 }
 function togglePause(){
-  if(G.state==="playing"){G.state="paused";$("pauseOverlay").classList.remove("hidden");if(AC)AC.suspend();}
-  else if(G.state==="paused"){G.state="playing";$("pauseOverlay").classList.add("hidden");if(AC)AC.resume();last=performance.now();}
+  // Pause the GAME, not the audio — the music must stay constant. No
+  // AC.suspend(): that killed the music on every blur/pause (the "massive
+  // gap" when the window lost focus).
+  if(G.state==="playing"){G.state="paused";$("pauseOverlay").classList.remove("hidden");}
+  else if(G.state==="paused"){G.state="playing";$("pauseOverlay").classList.add("hidden");if(AC&&AC.state==="suspended")AC.resume();last=performance.now();}
   const pb=$("btnPause");if(pb)pb.textContent=(G.state==="paused")?"▶":"⏸";
 }
 
@@ -826,6 +829,11 @@ addEventListener("keyup",e=>{
   if(k==="ArrowDown"||k==="s"||k==="S")release("down");
 });
 addEventListener("blur",()=>{if(G.state==="playing")togglePause();});
+// Browsers may still suspend the AudioContext when the tab is hidden —
+// force it back to running so the music never drops out.
+document.addEventListener("visibilitychange",()=>{
+  if(!document.hidden&&AC&&AC.state==="suspended")AC.resume();
+});
 /* touch */
 $("touch").addEventListener("pointerdown",e=>{
   const b=e.target.closest("button");if(!b)return;
@@ -1023,8 +1031,12 @@ function kick(t,vol=1){
   o.connect(g).connect(out());o.start(t);o.stop(t+.26);
   noiseHit(t,.014,.25*vol,"highpass",3000,1);
   pump(t);
-  const logo=$("logo");
-  logo.classList.remove("beat");void logo.offsetWidth;logo.classList.add("beat");
+  // notes are now scheduled up to LOOKAHEAD ahead — only pulse the logo for
+  // kicks that actually sound this frame
+  if(t-AC.currentTime<0.25){
+    const logo=$("logo");
+    logo.classList.remove("beat");void logo.offsetWidth;logo.classList.add("beat");
+  }
 }
 function noiseHit(t,dur,vol,fType,freq,q=1){
   const s=AC.createBufferSource();s.buffer=noiseBuf;
@@ -1162,18 +1174,22 @@ function scheduleStep(step,t){
     if(s16%4===2)leadNote(t,step+13,.09);
   }
 }
+/* 2s look-ahead: background tabs get setInterval throttled to ~1/s, so a
+   0.12s look-ahead starved the music (silence between ticks). Scheduling 2s
+   ahead means each throttled tick still tops the buffer up, and the track
+   plays constant even when the window isn't focused. */
+const LOOKAHEAD=2.0;
 function musicTick(){
   if(!M.on||!AC)return;
   const s16=60/M.bpm/4;
   const now=AC.currentTime;
-  // Resync if the scheduler fell behind the audio clock (tab backgrounded,
-  // phone locked, or a main-thread stall throttled this setInterval while
-  // AC.currentTime kept running). Without this, the catch-up below would
-  // replay every missed step at once — a wall of past-timed notes — and the
-  // loop point would land mid-burst instead of restarting the track cleanly.
-  // We keep the loop position (M.step) and just re-anchor the clock to now.
+  // Resync if the scheduler fell behind the audio clock (tab backgrounded
+  // long enough for intensive throttling, phone locked, or a main-thread
+  // stall). Without this, the catch-up below would replay every missed step
+  // at once — a wall of past-timed notes. We keep the loop position (M.step)
+  // and just re-anchor the clock to now.
   if(M.nextT<now-0.5)M.nextT=now+0.05;
-  while(M.nextT<now+.12){
+  while(M.nextT<now+LOOKAHEAD){
     scheduleStep(M.step,M.nextT);
     M.step++;
     M.nextT+=s16;
