@@ -79,7 +79,7 @@ body{
 body{flex-direction:column}
 #topbar{position:static;order:0;flex:0 0 auto;width:100%;height:64px;padding:0 26px}
 #fitWrap{order:1;flex:1 1 auto;display:flex;align-items:center;justify-content:center;min-height:0;overflow:hidden}
-#stage{position:relative;display:flex;gap:22px;padding:12px;transform-origin:center center}
+#stage{position:relative;display:flex;gap:22px;padding:12px;transform-origin:center center;align-items:flex-start}
 #fitWrap.shake{animation:shake .3s linear}
 @keyframes shake{
   0%,100%{transform:translate(0,0)}
@@ -212,7 +212,7 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
 .keys{font-size:11px;letter-spacing:.12em;color:rgba(150,190,240,.6);line-height:2.1}
 .keys b{color:var(--gold);font-weight:700}
 /* ============ TOUCH CONTROLS ============ */
-#touch{display:none;position:fixed;bottom:10px;left:0;right:0;z-index:7;justify-content:center;gap:10px;flex-wrap:wrap;padding:0 12px}
+#touch{display:none;order:2;flex:0 0 auto;justify-content:center;gap:10px;flex-wrap:wrap;padding:8px 12px 12px}
 #touch button{
   width:64px;height:64px;border-radius:16px;border:1px solid rgba(0,240,255,.4);
   background:rgba(10,4,26,.7);color:var(--cyan);font-size:22px;font-family:'Orbitron',sans-serif;
@@ -221,6 +221,44 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
 }
 #touch button:active{background:rgba(0,240,255,.25)}
 @media (pointer:coarse){ #touch{display:flex} .keys{display:none} }
+/* ============ MOBILE LAYOUT ============
+   Portrait / narrow: stack vertically — stats row, board, hold/next row.
+   The board keeps its 1:2 aspect ratio and sizes to the width.        */
+@media (max-width:760px), (orientation:portrait) and (max-width:920px){
+  #topbar{height:46px;padding:0 14px}
+  #logo{font-size:19px;letter-spacing:.08em}
+  #sysinfo{display:none}
+  #stage{flex-direction:column;gap:8px;padding:8px;align-items:center}
+  #sideL,#sideR{align-items:stretch}
+  .side{flex-direction:row;width:100%;max-width:430px;gap:8px}
+  .side .panel{flex:1;min-width:0}
+  .side .panel .inner{padding:6px 8px}
+  .label{font-size:9px;margin-bottom:4px}
+  #pScore{order:1}
+  #pLevel{order:2}
+  #pSys{order:3}
+  #sideL{order:1;flex-wrap:wrap}
+  #boardWrap{order:2;width:100%;max-width:300px}
+  #sideR{order:3}
+  #pHold{order:1}
+  #pNext{order:2}
+  #scoreBig{font-size:18px;margin-bottom:4px}
+  #pScore .inner{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px}
+  #pScore .label{grid-column:1/-1}
+  #pScore #scoreBig{grid-column:1/-1}
+  .stat{margin-bottom:2px}
+  .stat .v{font-size:11px}
+  .stat .k{font-size:7px;letter-spacing:.12em}
+  #levelBarWrap{height:5px}
+  #boardCanvas{width:100%;height:auto}
+  #holdCanvas{height:44px;width:auto}
+  #nextCanvas{height:100px;width:auto}
+  .overlay h2{font-size:22px}
+  .overlay p{font-size:11px;line-height:1.9}
+  .btn{padding:10px 22px;font-size:11px}
+  #touch{gap:6px;bottom:6px}
+  #touch button{width:44px;height:44px;font-size:17px;border-radius:12px}
+}
 </style>
 </head>
 <body>
@@ -241,13 +279,9 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
 </header>
 
 <div id="fitWrap"><main id="stage">
-  <!-- LEFT: hold / stats -->
-  <div class="side">
-    <div class="panel"><div class="inner">
-      <div class="label">Hold</div>
-      <canvas class="mini" id="holdCanvas" width="120" height="72"></canvas>
-    </div></div>
-    <div class="panel"><div class="inner">
+  <!-- LEFT: score / level / sys -->
+  <div class="side" id="sideL">
+    <div class="panel" id="pScore"><div class="inner">
       <div class="label">Score</div>
       <div id="scoreBig">0000000</div>
       <div class="stat"><span class="k">High</span><span class="v gold" id="hiScore">0000000</span></div>
@@ -255,10 +289,16 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
       <div class="stat"><span class="k">Combo</span><span class="v" id="combo">--</span></div>
       <div class="stat"><span class="k">Top Combo</span><span class="v" id="topCombo">--</span></div>
     </div></div>
-    <div class="panel"><div class="inner">
+    <div class="panel" id="pLevel"><div class="inner">
       <div class="label">Level <span id="levelNum" style="color:#fff;font-size:13px">01</span></div>
       <div id="levelBarWrap"><div id="levelBar"></div></div>
       <div style="margin-top:14px" class="stat"><span class="k">Speed</span><span class="v" id="speedLbl" style="font-size:13px">1.0x</span></div>
+    </div></div>
+    <div class="panel" id="pSys"><div class="inner">
+      <div class="label">Sys</div>
+      <div class="stat"><span class="k">Audio</span><span class="v" id="audioLbl" style="font-size:13px">ON</span></div>
+      <div class="stat"><span class="k">B2B</span><span class="v" id="b2bLbl" style="font-size:13px">--</span></div>
+      <div class="stat"><span class="k">Uptime</span><span class="v" id="uptime" style="font-size:13px">00:00</span></div>
     </div></div>
   </div>
 
@@ -292,17 +332,15 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
     </div>
   </div></div>
 
-  <!-- RIGHT: next queue -->
-  <div class="side">
-    <div class="panel"><div class="inner">
+  <!-- RIGHT: hold / next -->
+  <div class="side" id="sideR">
+    <div class="panel" id="pHold"><div class="inner">
+      <div class="label">Hold</div>
+      <canvas class="mini" id="holdCanvas" width="120" height="72"></canvas>
+    </div></div>
+    <div class="panel" id="pNext"><div class="inner">
       <div class="label">Next</div>
       <canvas class="mini" id="nextCanvas" width="120" height="216"></canvas>
-    </div></div>
-    <div class="panel"><div class="inner">
-      <div class="label">Sys</div>
-      <div class="stat"><span class="k">Audio</span><span class="v" id="audioLbl" style="font-size:13px">ON</span></div>
-      <div class="stat"><span class="k">B2B</span><span class="v" id="b2bLbl" style="font-size:13px">--</span></div>
-      <div class="stat"><span class="k">Uptime</span><span class="v" id="uptime" style="font-size:13px">00:00</span></div>
     </div></div>
   </div>
 </main></div>
@@ -666,24 +704,46 @@ function toggleMute(){
 }
 
 /* ============ PROCEDURAL Y2K HANDS-UP / TRANCE TRACK ============
-   138 BPM, 16-bar loop: intro -> groove -> breakdown -> build -> drop
+   138 BPM, 88 bars = 2:36, loops seamlessly (cycle 2 mirrors cycle 1
+   on the same chord progression with a second melody).
+   Arrangement: intro -> groove A -> breakdown -> build -> DROP ->
+   groove B -> bridge -> build -> DROP -> outro (-> intro, loop).
    Supersaw stabs/lead/pads (5 detuned saws, JP-8000 style), 909-style
-   kick with sidechain pump on the music bus, offbeat punchy bass,
-   tempo-synced dotted-8th delay, snare roll + noise riser build.
-   Progression: Am - F - C - G (anthemic Y2K minor).                */
+   kick with sidechain pump, offbeat punchy bass, dotted-8th delay,
+   snare rolls, noise risers, crash + tambourine. Am-F-C-G.         */
 const M={
   on:false, step:0, nextT:0, timer:null,
   bpm:138,
+  totalBars:88,
   chords:[
-    {b:33, pad:[57,60,64], arp:[57,60,64,67,64,60,67,64]},  // Am
-    {b:29, pad:[53,57,60], arp:[53,57,60,65,60,57,65,60]},  // F
-    {b:36, pad:[60,64,67], arp:[60,64,67,72,67,64,72,67]},  // C
-    {b:31, pad:[55,59,62], arp:[55,59,62,67,62,59,67,62]},  // G
+    {b:33, pad:[57,60,64]},  // Am
+    {b:29, pad:[53,57,60]},  // F
+    {b:36, pad:[60,64,67]},  // C
+    {b:31, pad:[55,59,62]},  // G
   ],
-  melody:[69,72,76,74, 72,69,67,69, 65,69,72,74, 76,74,72,71],
+  melA:[69,72,76,74, 72,69,67,69, 65,69,72,74, 76,74,72,71],
+  melB:[72,76,79,77, 76,72,71,72, 69,72,76,77, 79,77,76,74],
+  // section table: [startBar, endBar, name]
+  sections:[
+    [0,2,"intro"],[2,10,"grooveA"],[10,14,"break"],[14,16,"build"],
+    [16,24,"drop1"],[24,32,"grooveB"],[32,36,"bridge"],[36,38,"build2"],
+    [38,46,"drop2"],[46,50,"grooveB2"],[50,54,"break2"],[54,56,"build3"],
+    [56,64,"drop3"],[64,72,"grooveB3"],[72,76,"bridge2"],[76,78,"build4"],
+    [78,86,"drop4"],[86,88,"outro"],
+  ],
   delay:null,
 };
 const nf=m=>440*Math.pow(2,(m-69)/12);
+function sectionAt(bar){
+  for(const s of M.sections)if(bar>=s[0]&&bar<s[1])return s[2];
+  return "grooveA";
+}
+function melodyFor(section,step){
+  const m16=step%16;
+  if(section==="grooveA"||section==="break"||section==="build")return M.melA[m16];
+  if(section==="outro")return M.melA[m16];
+  return M.melB[m16];
+}
 function buildGraph(){
   if(!AC)return;
   if(!M.delay){
@@ -781,11 +841,20 @@ function stab(t,step,vol=.16,filterHz=0){
   const ch=M.chords[Math.floor(step/16)%4];
   supersaw(t,(60/M.bpm)*.48,ch.pad.map(nf),vol,M.musicBus,filterHz);
 }
-function leadNote(t,step,vol=.14,filterHz=0){
-  const m=M.melody[step%16];
+function leadNote(t,step,vol=.14,filterHz=0,section=null){
+  const sec=section||sectionAt(Math.floor(step/16)%M.totalBars);
+  const m=melodyFor(sec,step);
   const dests=[M.musicBus];
   if(M.delay)dests.push(M.delay);
   supersaw(t,(60/M.bpm)*.46,[nf(m),nf(m+12)],vol,dests,filterHz);
+}
+function crash(t,vol=.25){
+  noiseHit(t,1.6,vol,"highpass",5500,1);
+  noiseHit(t,.5,vol*.5,"bandpass",9000,.8);
+}
+function tamb(t,vol=.14){
+  noiseHit(t,.04,vol,"highpass",9500,2);
+  noiseHit(t+.02,.03,vol*.6,"highpass",12000,2);
 }
 function padChord(t,step,dur,vol=.09){
   const ch=M.chords[Math.floor(step/16)%4];
@@ -812,16 +881,16 @@ function snareRoll(t,barDur){
   }
 }
 function scheduleStep(step,t){
-  const bar=Math.floor(step/16)%16, s16=step%16, s8=step%8;
+  const bar=Math.floor(step/16)%M.totalBars;
+  const bar16=bar%16, s16=step%16, s8=step%8;
   const barDur=60/M.bpm*4;
-  if(bar<2){
-    // intro: kick + hats, pad only
+  const sec=sectionAt(bar);
+  if(sec==="intro"){
     if(s16%4===0)kick(t);
     if(s16%2===1)hat(t,.12);
     if(s16===0)padChord(t,step,barDur*.95);
     if(s16%4===0)stab(t,step,.07);
-  }else if(bar<8){
-    // main groove
+  }else if(sec==="grooveA"||sec==="grooveB"||sec==="grooveB2"||sec==="grooveB3"){
     if(s16%4===0)kick(t);
     if(s16===4)clap(t);
     if(s16%2===1)hat(t,.16);
@@ -829,26 +898,38 @@ function scheduleStep(step,t){
     if(s8===2||s8===6)bassNote(t,step);
     if(s16%8===4)stab(t,step);
     if(s16%2===0)leadNote(t,step);
-  }else if(bar<12){
-    // breakdown: no drums, pads + melody
+  }else if(sec==="break"||sec==="break2"){
     if(s16===0)padChord(t,step,barDur*.95,.11);
     if(s16%4===0)leadNote(t,step,.16);
-  }else if(bar<14){
-    // build: snare roll + riser, lead filter opens
-    if(bar===12)snareRoll(t,barDur);
-    if(bar===13)snareRoll(t,barDur);
+  }else if(sec==="bridge"||sec==="bridge2"){
+    if(s16%4===0)kick(t);
+    if(s16===4)clap(t);
+    if(s16%2===1)hat(t,.1);
+    if(s16===0)padChord(t,step,barDur*.95,.09);
+    if(s16%2===0)leadNote(t,step,.1);
+  }else if(sec==="build"||sec==="build2"||sec==="build3"||sec==="build4"){
+    const bi=bar-M.sections.find(s=>s[2]===sec)[0];
+    if(bi===0)snareRoll(t,barDur);
+    if(bi===1)snareRoll(t,barDur);
     if(s16===0)noiseRiser(t,barDur*.95);
-    if(s16%4===0)leadNote(t,step,.14,400+((bar-12)*16+s16)*120);
-  }else{
-    // drop: full energy
+    if(s16%4===0)leadNote(t,step,.14,400+bi*800+s16*60);
+  }else if(sec==="drop1"||sec==="drop2"||sec==="drop3"||sec==="drop4"){
+    if(bar===16||bar===38||bar===56||bar===78)crash(t);
     if(s16%4===0)kick(t);
     if(s16===4)clap(t);
     if(s16%2===1)hat(t,.18);
     if(s16===14)hat(t,.24,true);
+    if(s8===2||s8===6)tamb(t);
     if(s8===2||s8===6)bassNote(t,step);
     if(s16%8===4)stab(t,step,.18);
     if(s16%2===0)leadNote(t,step,.15);
     if(s16%4===2)leadNote(t,step+13,.09);
+  }else if(sec==="outro"){
+    if(s16%4===0)kick(t);
+    if(s16%2===1)hat(t,.12);
+    if(s16===0)padChord(t,step,barDur*.95);
+    if(s16%4===0)leadNote(t,step,.09);
+    if(bar===86)crash(t,.2);
   }
 }
 function musicTick(){
