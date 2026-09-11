@@ -78,7 +78,7 @@ body{
 /* ============ LAYOUT ============ */
 body{flex-direction:column}
 #fitWrap{order:1;flex:1 1 auto;display:flex;align-items:center;justify-content:center;min-height:0;overflow:hidden}
-#stage{position:relative;display:flex;gap:22px;padding:12px;transform-origin:center center;align-items:flex-start}
+#stage{position:relative;display:flex;gap:22px;padding:12px;transform-origin:center center;align-items:stretch}
 #fitWrap.shake{animation:shake .3s linear}
 @keyframes shake{
   0%,100%{transform:translate(0,0)}
@@ -92,7 +92,7 @@ body{flex-direction:column}
   position:relative;
   background:var(--panel);
   border-radius:14px;
-  padding:14px;
+  padding:10px;
   backdrop-filter:blur(10px);
   border:1px solid transparent;
   background-clip:padding-box;
@@ -104,7 +104,7 @@ body{flex-direction:column}
   animation:chromeShift 8s ease-in-out infinite;
 }
 @keyframes chromeShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
-.panel .inner{border-radius:10px;background:linear-gradient(180deg, rgba(10,4,26,.92), rgba(24,8,48,.88));padding:12px;position:relative;overflow:hidden}
+.panel .inner{border-radius:10px;background:linear-gradient(180deg, rgba(10,4,26,.92), rgba(24,8,48,.88));padding:8px;position:relative;overflow:hidden}
 .panel .inner::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.7),transparent)}
 /* ============ HEADER ============ */
 #topbar{position:fixed;top:0;left:0;right:0;z-index:6;display:flex;align-items:center;justify-content:space-between;padding:14px 26px;pointer-events:none}
@@ -131,14 +131,14 @@ body{flex-direction:column}
 #sysinfo{position:fixed;bottom:8px;right:18px;font-family:'Orbitron',monospace;font-size:10px;letter-spacing:.22em;color:rgba(160,220,255,.6);text-align:right;line-height:1.7;z-index:6;pointer-events:none}
 #sysinfo b{color:var(--cyan)}
 /* ============ SIDE PANELS ============ */
-.side{width:172px;display:flex;flex-direction:column;gap:16px}
+.side{width:clamp(108px,15vw,172px);display:flex;flex-direction:column;gap:12px;flex:0 0 auto;justify-content:center;min-height:0}
 .label{
   font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;letter-spacing:.3em;
-  color:var(--cyan);text-transform:uppercase;margin-bottom:8px;
+  color:var(--cyan);text-transform:uppercase;margin-bottom:6px;
   display:flex;align-items:center;gap:8px;
 }
 .label::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--cyan),transparent)}
-.stat{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.stat{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
 .stat .k{font-size:10px;letter-spacing:.25em;color:rgba(180,210,255,.55);text-transform:uppercase}
 .stat .v{font-family:'Orbitron',monospace;font-weight:700;font-size:14px;color:#fff;text-shadow:0 0 12px rgba(0,240,255,.7);white-space:nowrap}
 .stat .v.gold{color:var(--gold);text-shadow:0 0 12px rgba(255,217,59,.7)}
@@ -147,7 +147,7 @@ body{flex-direction:column}
   background:linear-gradient(180deg,#fff,#9fe8ff 55%,#00f0ff);
   -webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 0 10px rgba(0,240,255,.6));
-  margin-bottom:14px;font-variant-numeric:tabular-nums;letter-spacing:0;
+  margin-bottom:8px;font-variant-numeric:tabular-nums;letter-spacing:0;
 }
 #levelBarWrap{height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:4px;border:1px solid rgba(0,240,255,.25)}
 #levelBar{height:100%;width:0%;border-radius:4px;transition:width .3s ease;
@@ -408,7 +408,7 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
     <div class="panel" id="pLevel"><div class="inner">
       <div class="label">Level <span id="levelNum" style="color:#fff;font-size:13px">01</span></div>
       <div id="levelBarWrap"><div id="levelBar"></div></div>
-      <div style="margin-top:14px" class="stat"><span class="k">Speed</span><span class="v" id="speedLbl" style="font-size:13px">1.0x</span></div>
+      <div style="margin-top:8px" class="stat"><span class="k">Speed</span><span class="v" id="speedLbl" style="font-size:13px">1.0x</span></div>
     </div></div>
     <div class="panel" id="pSys"><div class="inner">
       <div class="label">Sys</div>
@@ -517,14 +517,25 @@ function fitBoard(){
     fitMinisM();
   }else{
     // landscape: size the board to the available space so text never
-    // gets scaled down via transform (which blurs/shrinks the digits)
+    // gets scaled down via transform (which blurs/shrinks the digits).
+    // Height-driven: the board fills the available height and keeps its
+    // 1:2 aspect, so it always fits no matter how thin the screen is.
     const wrap=$("fitWrap");
     const r=wrap.getBoundingClientRect();
     const topbarH=$("topbar").getBoundingClientRect().height;
-    const sideW=172;
-    const availW=Math.max(200, r.width - sideW*2 - 22*2 - 24);
-    const availH=Math.max(300, r.height - topbarH - 16);
-    const cell=Math.max(14, Math.min(34, Math.floor(Math.min(availH/ROWS, availW/COLS))));
+    // measure the side panels' actual (clamped) width + the real gap
+    const sideL=$("sideL").getBoundingClientRect().width;
+    const sideR=$("sideR").getBoundingClientRect().width;
+    const gap=parseFloat(getComputedStyle($("stage")).gap)||22;
+    const pad=parseFloat(getComputedStyle($("stage")).paddingLeft)||12;
+    // board panel chrome = panel box minus the canvas it already contains
+    const bw=$("boardWrap").getBoundingClientRect();
+    const chromeW=Math.max(24, bw.width - boardCanvas.getBoundingClientRect().width);
+    const chromeH=Math.max(24, bw.height - boardCanvas.getBoundingClientRect().height);
+    const availW=Math.max(140, r.width - sideL - sideR - gap*2 - pad*2 - chromeW);
+    const availH=Math.max(240, r.height - topbarH - chromeH);
+    // fit 1:2 into the box: height-limited first, width-limited second
+    const cell=Math.max(10, Math.floor(Math.min(availH/ROWS, availW/COLS)));
     fitCanvas(boardCanvas, COLS*cell, ROWS*cell);
   }
 }
