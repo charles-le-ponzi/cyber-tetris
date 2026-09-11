@@ -665,32 +665,63 @@ function toggleMute(){
   $("audioLbl").style.color=muted?"#ff5c5c":"";
 }
 
-/* ============ PROCEDURAL EUROBEAT / TRANCE TRACK ============
-   4-on-the-floor kick, offbeat hats, driving bass, arpeggio lead
-   with feedback delay. Tempo & intensity scale with game level.
-   Am - F - C - G progression, 16th-note resolution.            */
+/* ============ PROCEDURAL Y2K HANDS-UP / TRANCE TRACK ============
+   138 BPM, 16-bar loop: intro -> groove -> breakdown -> build -> drop
+   Supersaw stabs/lead/pads (5 detuned saws, JP-8000 style), 909-style
+   kick with sidechain pump on the music bus, offbeat punchy bass,
+   tempo-synced dotted-8th delay, snare roll + noise riser build.
+   Progression: Am - F - C - G (anthemic Y2K minor).                */
 const M={
   on:false, step:0, nextT:0, timer:null,
-  bpm:128,
+  bpm:138,
   chords:[
-    {b:45, arp:[57,60,64,67,64,60]},   // Am
-    {b:41, arp:[53,57,60,65,60,57]},   // F
-    {b:48, arp:[60,64,67,72,67,64]},   // C
-    {b:43, arp:[55,59,62,67,62,59]},   // G
+    {b:33, pad:[57,60,64], arp:[57,60,64,67,64,60,67,64]},  // Am
+    {b:29, pad:[53,57,60], arp:[53,57,60,65,60,57,65,60]},  // F
+    {b:36, pad:[60,64,67], arp:[60,64,67,72,67,64,72,67]},  // C
+    {b:31, pad:[55,59,62], arp:[55,59,62,67,62,59,67,62]},  // G
   ],
-  leadPat:[0,2,1,3, 0,2,4,3, 0,2,1,3, 5,4,2,1],
+  melody:[69,72,76,74, 72,69,67,69, 65,69,72,74, 76,74,72,71],
   delay:null,
 };
 const nf=m=>440*Math.pow(2,(m-69)/12);
+function buildGraph(){
+  if(!AC)return;
+  if(!M.delay){
+    M.delay=AC.createDelay(1);M.delay.delayTime.value=60/M.bpm*.75;
+    const fb=AC.createGain();fb.gain.value=.3;
+    const wet=AC.createGain();wet.gain.value=.35;
+    M.delay.connect(fb).connect(M.delay);
+    M.delay.connect(wet).connect(out());
+  }
+  if(!M.compressor){
+    M.compressor=AC.createDynamicsCompressor();
+    M.compressor.threshold.value=-14;M.compressor.ratio.value=4;
+    M.compressor.attack.value=.004;M.compressor.release.value=.18;
+    M.compressor.connect(master);
+  }
+  if(!M.musicBus){
+    M.musicBus=AC.createGain();M.musicBus.gain.value=1;
+    M.musicBus.connect(M.compressor);
+  }
+}
+function pump(t){
+  if(!M.musicBus)return;
+  const g=M.musicBus.gain;
+  g.cancelScheduledValues(t);
+  g.setValueAtTime(.28,t);
+  g.linearRampToValueAtTime(1,t+.2);
+  g.linearRampToValueAtTime(.82,t+.34);
+}
 function kick(t,vol=1){
   const o=AC.createOscillator(),g=AC.createGain();
   o.type="sine";
   o.frequency.setValueAtTime(150,t);
   o.frequency.exponentialRampToValueAtTime(45,t+.12);
-  g.gain.setValueAtTime(.85*vol,t);
-  g.gain.exponentialRampToValueAtTime(.001,t+.22);
-  o.connect(g).connect(out());o.start(t);o.stop(t+.25);
-  // beat flash on the logo
+  g.gain.setValueAtTime(.9*vol,t);
+  g.gain.exponentialRampToValueAtTime(.001,t+.24);
+  o.connect(g).connect(out());o.start(t);o.stop(t+.26);
+  noiseHit(t,.014,.25*vol,"highpass",3000,1);
+  pump(t);
   const logo=$("logo");
   logo.classList.remove("beat");void logo.offsetWidth;logo.classList.add("beat");
 }
@@ -702,42 +733,123 @@ function noiseHit(t,dur,vol,fType,freq,q=1){
   g.gain.exponentialRampToValueAtTime(.001,t+dur);
   s.connect(f).connect(g).connect(out());s.start(t);s.stop(t+dur+.02);
 }
-function snare(t,vol=.5){noiseHit(t,.16,vol,"bandpass",1800,1.2);tone(190,.1,"triangle",vol*.7,-60,0);}
-function hat(t,vol=.22,open=false){noiseHit(t,open?.18:.05,vol,"highpass",7500,1);}
+function snare(t,vol=.5){
+  noiseHit(t,.14,vol,"bandpass",1700,1.2);
+  noiseHit(t,.05,vol*.6,"highpass",4500,1);
+  tone(190,.09,"triangle",vol*.6,-60,0);
+}
+function clap(t,vol=.4){
+  [0,.012,.026].forEach(d=>noiseHit(t+d,.09,vol*.7,"bandpass",1300,1.5));
+}
+function hat(t,vol=.2,open=false){
+  noiseHit(t,open?.16:.045,vol,"highpass",8000,1);
+}
+function supersaw(t,dur,freqs,vol,dest,filterHz=0){
+  const g=AC.createGain();
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(vol,t+.015);
+  g.gain.setValueAtTime(vol,t+dur*.6);
+  g.gain.linearRampToValueAtTime(0,t+dur);
+  let head=g;
+  if(filterHz){
+    const f=AC.createBiquadFilter();f.type="lowpass";f.frequency.value=filterHz;
+    g.connect(f);head=f;
+  }
+  (Array.isArray(dest)?dest:[dest]).forEach(d=>head.connect(d));
+  for(const fr of freqs){
+    for(let i=0;i<5;i++){
+      const o=AC.createOscillator();
+      o.type="sawtooth";o.frequency.value=fr;
+      o.detune.value=(i-2)*11;
+      o.connect(g);o.start(t);o.stop(t+dur+.03);
+    }
+  }
+}
 function bassNote(t,step){
   const ch=M.chords[Math.floor(step/16)%4];
-  const m=ch.b;
   const o=AC.createOscillator(),g=AC.createGain(),f=AC.createBiquadFilter();
-  o.type="sawtooth";o.frequency.value=nf(m);
+  o.type="sawtooth";o.frequency.value=nf(ch.b);
   f.type="lowpass";
-  f.frequency.setValueAtTime(900,t);
-  f.frequency.exponentialRampToValueAtTime(250,t+.11);
-  g.gain.setValueAtTime(.3,t);
-  g.gain.exponentialRampToValueAtTime(.001,t+.13);
-  o.connect(f).connect(g).connect(out());o.start(t);o.stop(t+.15);
+  f.frequency.setValueAtTime(1100,t);
+  f.frequency.exponentialRampToValueAtTime(180,t+.1);
+  g.gain.setValueAtTime(.34,t);
+  g.gain.exponentialRampToValueAtTime(.001,t+.12);
+  o.connect(f).connect(g).connect(M.musicBus);
+  o.start(t);o.stop(t+.14);
 }
-function leadNote(t,step,oct=12){
+function stab(t,step,vol=.16,filterHz=0){
   const ch=M.chords[Math.floor(step/16)%4];
-  const m=ch.arp[M.leadPat[step%16]%ch.arp.length]+oct;
-  const o=AC.createOscillator(),o2=AC.createOscillator(),g=AC.createGain(),f=AC.createBiquadFilter();
-  o.type="square";o2.type="square";
-  o.frequency.value=nf(m);o2.frequency.value=nf(m);o2.detune.value=9;
-  f.type="lowpass";f.frequency.value=3200;
-  g.gain.setValueAtTime(.11,t);
-  g.gain.exponentialRampToValueAtTime(.001,t+.14);
-  o.connect(f);o2.connect(f);f.connect(g);
-  g.connect(out());g.connect(M.delay);
-  o.start(t);o2.start(t);o.stop(t+.16);o2.stop(t+.16);
+  supersaw(t,(60/M.bpm)*.48,ch.pad.map(nf),vol,M.musicBus,filterHz);
+}
+function leadNote(t,step,vol=.14,filterHz=0){
+  const m=M.melody[step%16];
+  const dests=[M.musicBus];
+  if(M.delay)dests.push(M.delay);
+  supersaw(t,(60/M.bpm)*.46,[nf(m),nf(m+12)],vol,dests,filterHz);
+}
+function padChord(t,step,dur,vol=.09){
+  const ch=M.chords[Math.floor(step/16)%4];
+  supersaw(t,dur,ch.pad.map(nf),vol,M.musicBus,2600);
+}
+function noiseRiser(t,dur,vol=.12){
+  const s=AC.createBufferSource();s.buffer=noiseBuf;s.loop=true;
+  const f=AC.createBiquadFilter();f.type="highpass";
+  f.frequency.setValueAtTime(300,t);
+  f.frequency.exponentialRampToValueAtTime(9000,t+dur);
+  const g=AC.createGain();
+  g.gain.setValueAtTime(.001,t);
+  g.gain.linearRampToValueAtTime(vol,t+dur);
+  g.gain.linearRampToValueAtTime(0,t+dur+.05);
+  s.connect(f).connect(g).connect(M.musicBus);
+  s.start(t);s.stop(t+dur+.1);
+}
+function snareRoll(t,barDur){
+  for(let i=0;i<16;i++){
+    const st=t+i*barDur/16;
+    const v=.12+i*.02;
+    snare(st,v);
+    if(i>=8)snare(st+barDur/32,v*.6);
+  }
 }
 function scheduleStep(step,t){
-  const s16=step%16;
-  if(s16%4===0)kick(t);
-  if(s16%4===2)snare(t);
-  hat(t,.18,false);
-  if(s16===14)hat(t,.22,true);
-  if(s16%2===0)bassNote(t,step);
-  if(G.level>=2)leadNote(t,step);
-  if(G.level>=4)leadNote(t,step,0);
+  const bar=Math.floor(step/16)%16, s16=step%16, s8=step%8;
+  const barDur=60/M.bpm*4;
+  if(bar<2){
+    // intro: kick + hats, pad only
+    if(s16%4===0)kick(t);
+    if(s16%2===1)hat(t,.12);
+    if(s16===0)padChord(t,step,barDur*.95);
+    if(s16%4===0)stab(t,step,.07);
+  }else if(bar<8){
+    // main groove
+    if(s16%4===0)kick(t);
+    if(s16===4)clap(t);
+    if(s16%2===1)hat(t,.16);
+    if(s16===14)hat(t,.22,true);
+    if(s8===2||s8===6)bassNote(t,step);
+    if(s16%8===4)stab(t,step);
+    if(s16%2===0)leadNote(t,step);
+  }else if(bar<12){
+    // breakdown: no drums, pads + melody
+    if(s16===0)padChord(t,step,barDur*.95,.11);
+    if(s16%4===0)leadNote(t,step,.16);
+  }else if(bar<14){
+    // build: snare roll + riser, lead filter opens
+    if(bar===12)snareRoll(t,barDur);
+    if(bar===13)snareRoll(t,barDur);
+    if(s16===0)noiseRiser(t,barDur*.95);
+    if(s16%4===0)leadNote(t,step,.14,400+((bar-12)*16+s16)*120);
+  }else{
+    // drop: full energy
+    if(s16%4===0)kick(t);
+    if(s16===4)clap(t);
+    if(s16%2===1)hat(t,.18);
+    if(s16===14)hat(t,.24,true);
+    if(s8===2||s8===6)bassNote(t,step);
+    if(s16%8===4)stab(t,step,.18);
+    if(s16%2===0)leadNote(t,step,.15);
+    if(s16%4===2)leadNote(t,step+13,.09);
+  }
 }
 function musicTick(){
   if(!M.on||!AC)return;
@@ -750,20 +862,14 @@ function musicTick(){
 }
 function musicStart(){
   if(!AC||M.on)return;
+  buildGraph();
   M.on=true;M.step=0;M.nextT=AC.currentTime+.06;
-  if(!M.delay){
-    M.delay=AC.createDelay(1);M.delay.delayTime.value=60/M.bpm*.75;
-    const fb=AC.createGain();fb.gain.value=.32;
-    const wet=AC.createGain();wet.gain.value=.4;
-    M.delay.connect(fb).connect(M.delay);
-    M.delay.connect(wet).connect(out());
-  }
   clearInterval(M.timer);
   M.timer=setInterval(musicTick,25);
 }
 function musicStop(){M.on=false;clearInterval(M.timer);M.timer=null;}
 function musicSetLevel(){
-  M.bpm=128+Math.min(40,(G.level-1)*3);
+  M.bpm=138+Math.min(12,(G.level-1)*2);
   if(M.delay)M.delay.delayTime.value=60/M.bpm*.75;
 }
 
