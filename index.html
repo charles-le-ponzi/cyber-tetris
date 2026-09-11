@@ -77,7 +77,6 @@ body{
 }
 /* ============ LAYOUT ============ */
 body{flex-direction:column}
-#topbar{position:static;order:0;flex:0 0 auto;width:100%;height:64px;padding:0 26px}
 #fitWrap{order:1;flex:1 1 auto;display:flex;align-items:center;justify-content:center;min-height:0;overflow:hidden}
 #stage{position:relative;display:flex;gap:22px;padding:12px;transform-origin:center center;align-items:flex-start}
 #fitWrap.shake{animation:shake .3s linear}
@@ -221,77 +220,116 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
 }
 #touch button:active{background:rgba(0,240,255,.25)}
 @media (pointer:coarse){ #touch{display:flex} .keys{display:none} }
-/* ============ MOBILE PORTRAIT LAYOUT (v3) ============ */
+/* ============ MOBILE PORTRAIT LAYOUT (v4) ============
+   Built from the ground up for phones: compact 2-row HUD on top,
+   board centered, hold/next strip, thumb-sized control deck.
+   No transform scaling anywhere; everything fits 100dvh.          */
 #hudTop,#hudBottom{display:none}
 @media (orientation:portrait) and (max-width:760px){
-  #hudTop{display:flex}
-  #hudBottom{display:flex}
-  body{overflow:hidden;align-items:stretch;justify-content:stretch}
-  #topbar{height:42px;padding:0 14px;z-index:30}
-  #logo{font-size:20px;letter-spacing:.06em}
+  html,body{height:100dvh}
+  body{
+    overflow:hidden;align-items:stretch;justify-content:stretch;
+    padding-top:env(safe-area-inset-top);
+    background:var(--bg);
+  }
+  #topbar{
+    position:fixed;top:0;left:0;right:0;z-index:30;
+    height:calc(34px + env(safe-area-inset-top));
+    padding:calc(6px + env(safe-area-inset-top)) 14px 6px;
+  }
+  #logo{font-size:16px;letter-spacing:.06em;animation:none;
+    filter:drop-shadow(0 0 8px rgba(0,240,255,.45))}
   #sysinfo{display:none}
   #sideL,#sideR{display:none}
-  #fitWrap{overflow:hidden;min-height:0;flex:1 1 auto;justify-content:stretch}
+  #fitWrap{min-height:0;flex:1 1 auto;justify-content:stretch;overflow:hidden}
   #stage{
-    flex-direction:column;gap:0;padding:0;align-items:stretch;transform:none!important;
+    flex-direction:column;gap:0;padding:0;align-items:stretch;
+    transform:none!important;
     width:100%;height:100%;
+    padding-top:calc(34px + env(safe-area-inset-top));
   }
-  /* ---- HUD top: score / level / lines / high ---- */
+  /* ---- HUD top: two compact rows, no chrome-frame bloat ---- */
   #hudTop{
-    order:1;display:flex;gap:6px;padding:6px 10px 4px;flex:0 0 auto;
+    order:1;display:flex;flex-direction:column;gap:5px;
+    padding:5px 10px 4px;flex:0 0 auto;
   }
+  .hrow{display:flex;gap:6px}
   .hcell{
-    flex:1;min-width:0;background:var(--panel);border-radius:9px;padding:5px 8px;
-    backdrop-filter:blur(10px);border:1px solid transparent;background-clip:padding-box;
+    flex:1;min-width:0;position:relative;
+    background:rgba(14,5,32,.72);border-radius:10px;padding:5px 9px 6px;
+    backdrop-filter:blur(10px);
+    border:1px solid rgba(140,170,210,.35);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.25), 0 2px 6px rgba(0,0,0,.4);
     display:flex;flex-direction:column;justify-content:center;gap:1px;
   }
-  .hcell::before{
-    content:"";position:absolute;inset:-1px;border-radius:10px;z-index:-1;
-    background:linear-gradient(135deg,#fff 0%,#9fb4cc 18%,#3a4a63 38%,#c9d8ea 55%,#5a6b85 75%,#e8f1ff 100%);
-    background-size:300% 300%;animation:chromeShift 8s ease-in-out infinite;
+  .hcell .hk{
+    font-family:'Orbitron',sans-serif;font-size:8px;font-weight:700;
+    letter-spacing:.2em;color:rgba(160,200,255,.6);text-transform:uppercase;
   }
-  .hcell .hk{font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:.18em;color:rgba(180,210,255,.55);text-transform:uppercase}
-  .hcell .hv{font-family:'Orbitron',monospace;font-weight:700;font-size:15px;color:#fff;text-shadow:0 0 10px rgba(0,240,255,.7);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .hcell .hv.gold{color:var(--gold);text-shadow:0 0 10px rgba(255,217,59,.7)}
-  .hcell.score{flex:1.5}
-  .hcell.score .hv{font-size:19px}
-  .hcell .bar{height:4px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:3px;border:1px solid rgba(0,240,255,.25)}
+  .hcell .hv{
+    font-family:'Orbitron',monospace;font-weight:700;font-size:16px;line-height:1.15;
+    color:#fff;text-shadow:0 0 10px rgba(0,240,255,.7);
+    font-variant-numeric:tabular-nums;white-space:nowrap;
+  }
+  .hcell.score{flex:1.7}
+  .hcell.score .hv{
+    font-size:21px;
+    background:linear-gradient(180deg,#fff,#9fe8ff 55%,#00f0ff);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 8px rgba(0,240,255,.55));
+  }
+  .hcell.gold .hv{color:var(--gold);text-shadow:0 0 10px rgba(255,217,59,.7)}
+  .hcell .bar{height:4px;border-radius:2px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:3px;border:1px solid rgba(0,240,255,.25)}
   .hcell .bar i{display:block;height:100%;width:0%;border-radius:2px;transition:width .3s ease;background:linear-gradient(90deg,var(--violet),var(--magenta),var(--cyan));box-shadow:0 0 8px rgba(255,47,214,.8)}
-  /* ---- board: flexes to fill middle ---- */
-  #boardWrap{order:2;flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;padding:4px 10px}
+  /* ---- board: flexes to fill the middle, centered ---- */
+  #boardWrap{order:2;flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;padding:4px 12px}
   #boardWrap .inner{padding:4px;height:100%;display:flex;align-items:center;justify-content:center}
   #boardWrap .inner>div{height:100%;display:flex;align-items:center;justify-content:center}
   #boardCanvas{touch-action:none;display:block}
-  /* ---- HUD bottom: hold / next ---- */
-  #hudBottom{order:3;display:flex;gap:6px;padding:4px 10px 6px;flex:0 0 auto}
-  #hudBottom .panel{flex:1;min-width:0;padding:6px}
-  #hudBottom .panel .inner{padding:4px 8px}
-  #hudBottom .label{font-size:9px;margin-bottom:4px}
-  #hudBottom canvas.mini{width:100%;height:auto;display:block}
-  #pNextM{flex:1.6}
-  /* ---- control deck: thumb zone, pinned bottom ---- */
+  /* ---- hold / next strip: horizontal, compact ---- */
+  #hudBottom{order:3;display:flex;gap:6px;padding:4px 10px 5px;flex:0 0 auto}
+  #hudBottom .panel{
+    flex:1;min-width:0;padding:5px 8px;border-radius:10px;
+    background:rgba(14,5,32,.72);backdrop-filter:blur(10px);
+    border:1px solid rgba(140,170,210,.35);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.25);
+  }
+  #hudBottom .panel::before{display:none}
+  #hudBottom .panel .inner{
+    padding:0;border-radius:6px;
+    background:linear-gradient(180deg, rgba(10,4,26,.9), rgba(24,8,48,.85));
+  }
+  #hudBottom .panel .inner::before{display:none}
+  #hudBottom .label{font-size:8px;margin:3px 0 2px;letter-spacing:.25em}
+  #hudBottom canvas.mini{display:block;margin:0 auto}
+  #pHoldM{flex:1}
+  #pNextM{flex:2.2}
+  /* ---- control deck: 2 rows of 4, thumb zone, pinned bottom ---- */
   #touch{
-    display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px 12px calc(10px + env(safe-area-inset-bottom));
+    display:grid;grid-template-columns:repeat(4,1fr);gap:7px;
+    padding:8px 10px calc(10px + env(safe-area-inset-bottom));
     flex:0 0 auto;position:fixed;bottom:0;left:0;right:0;z-index:25;
-    background:linear-gradient(transparent,rgba(7,0,15,.96) 22%);
+    background:linear-gradient(transparent,rgba(7,0,15,.97) 26%);
   }
   #touch button{
-    width:100%;height:52px;border-radius:14px;border:1px solid rgba(0,240,255,.4);
-    background:rgba(10,4,26,.72);color:var(--cyan);font-size:20px;font-family:'Orbitron',sans-serif;
-    backdrop-filter:blur(8px);box-shadow:0 0 14px rgba(0,240,255,.2);
-    touch-action:manipulation;user-select:none;
+    width:100%;height:54px;border-radius:14px;border:1px solid rgba(0,240,255,.4);
+    background:rgba(10,4,26,.75);color:var(--cyan);font-size:20px;font-family:'Orbitron',sans-serif;
+    backdrop-filter:blur(8px);box-shadow:0 0 12px rgba(0,240,255,.18), inset 0 1px 0 rgba(255,255,255,.15);
+    touch-action:manipulation;user-select:none;-webkit-user-select:none;
   }
-  #touch button:active{background:rgba(0,240,255,.28);transform:scale(.96)}
-  #touch button[data-act="drop"]{color:var(--magenta);border-color:rgba(255,47,214,.5);box-shadow:0 0 14px rgba(255,47,214,.25)}
-  #touch button[data-act="drop"]:active{background:rgba(255,47,214,.28)}
-  #touch button[data-act="rotate"]{color:var(--lime);border-color:rgba(200,255,0,.5);box-shadow:0 0 14px rgba(200,255,0,.25)}
+  #touch button:active{background:rgba(0,240,255,.28);transform:scale(.95)}
+  #touch button[data-act="drop"]{color:var(--magenta);border-color:rgba(255,47,214,.55);box-shadow:0 0 12px rgba(255,47,214,.25)}
+  #touch button[data-act="drop"]:active{background:rgba(255,47,214,.3)}
+  #touch button[data-act="rotate"]{color:var(--lime);border-color:rgba(200,255,0,.5);box-shadow:0 0 12px rgba(200,255,0,.22)}
   #touch button[data-act="rotate"]:active{background:rgba(200,255,0,.28)}
-  /* reserve space so board doesn't hide behind deck */
-  #stage{padding-bottom:118px}
+  /* reserve space so board never hides behind the deck */
+  #stage{padding-bottom:124px}
   .keys{display:none}
-  .overlay h2{font-size:26px}
-  .overlay p{font-size:12px;line-height:1.9}
-  .btn{padding:13px 30px;font-size:14px;touch-action:manipulation}
+  .overlay{gap:12px;padding:16px 10px}
+  .overlay h2{font-size:19px;letter-spacing:.06em;white-space:nowrap}
+  .overlay p{font-size:11px;line-height:1.8;letter-spacing:.14em}
+  .btn{padding:12px 22px;font-size:12px;letter-spacing:.18em;touch-action:manipulation}
+  .popup{font-size:22px!important}
 }
 </style>
 </head>
@@ -313,12 +351,16 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
 </header>
 
 <div id="fitWrap"><main id="stage">
-  <!-- MOBILE PORTRAIT: HUD top (score / level / lines / high) -->
+  <!-- MOBILE PORTRAIT: HUD top (row 1: score/level, row 2: lines/high) -->
   <div id="hudTop">
-    <div class="hcell score"><span class="hk">Score</span><span class="hv" id="msScore">0000000</span></div>
-    <div class="hcell"><span class="hk">Level</span><span class="hv" id="msLevel">01</span><div class="bar"><i id="msLevelBar"></i></div></div>
-    <div class="hcell"><span class="hk">Lines</span><span class="hv" id="msLines">0000</span></div>
-    <div class="hcell"><span class="hk">High</span><span class="hv gold" id="msHigh">0000000</span></div>
+    <div class="hrow">
+      <div class="hcell score"><span class="hk">Score</span><span class="hv" id="msScore">0000000</span></div>
+      <div class="hcell"><span class="hk">Level</span><span class="hv" id="msLevel">01</span><div class="bar"><i id="msLevelBar"></i></div></div>
+    </div>
+    <div class="hrow">
+      <div class="hcell"><span class="hk">Lines</span><span class="hv" id="msLines">0000</span></div>
+      <div class="hcell gold"><span class="hk">High</span><span class="hv" id="msHigh">0000000</span></div>
+    </div>
   </div>
   <!-- LEFT: score / level / sys -->
   <div class="side" id="sideL">
@@ -373,15 +415,15 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
     </div>
   </div></div>
 
-  <!-- MOBILE PORTRAIT: HUD bottom (hold / next) -->
+  <!-- MOBILE PORTRAIT: compact bottom strip (hold + next in one row) -->
   <div id="hudBottom">
     <div class="panel" id="pHoldM"><div class="inner">
       <div class="label">Hold</div>
-      <canvas class="mini" id="holdCanvasM" width="120" height="72"></canvas>
+      <canvas class="mini" id="holdCanvasM" width="120" height="48"></canvas>
     </div></div>
     <div class="panel" id="pNextM"><div class="inner">
       <div class="label">Next</div>
-      <canvas class="mini" id="nextCanvasM" width="120" height="216"></canvas>
+      <canvas class="mini" id="nextCanvasM" width="220" height="48"></canvas>
     </div></div>
   </div>
 
@@ -439,8 +481,18 @@ function fitBoard(){
     boardCanvas.style.height=h+"px";
     boardCanvas.width=w*dpr;boardCanvas.height=h*dpr;
     bctx.setTransform(dpr,0,0,dpr,0,0);
+    fitMinisM();
   }else{
-    fitCanvas(boardCanvas,COLS*CELL,ROWS*CELL);
+    // landscape: size the board to the available space so text never
+    // gets scaled down via transform (which blurs/shrinks the digits)
+    const wrap=$("fitWrap");
+    const r=wrap.getBoundingClientRect();
+    const topbarH=$("topbar").getBoundingClientRect().height;
+    const sideW=172;
+    const availW=Math.max(200, r.width - sideW*2 - 22*2 - 24);
+    const availH=Math.max(300, r.height - topbarH - 16);
+    const cell=Math.max(14, Math.min(34, Math.floor(Math.min(availH/ROWS, availW/COLS))));
+    fitCanvas(boardCanvas, COLS*cell, ROWS*cell);
   }
 }
 fitBoard();
@@ -448,6 +500,17 @@ fitCanvas(holdCanvas,120,72);
 fitCanvas(nextCanvas,120,216);
 fitCanvas(holdCanvasM,120,72);
 fitCanvas(nextCanvasM,120,216);
+function fitMinisM(){
+  if(!window.matchMedia("(orientation:portrait) and (max-width:760px)").matches)return;
+  const holdP=$("pHoldM"), nextP=$("pNextM");
+  if(!holdP||!nextP)return;
+  const H=44;
+  const hw=Math.max(56,Math.floor(holdP.clientWidth-16));
+  const nw=Math.max(120,Math.floor(nextP.clientWidth-16));
+  fitCanvas(holdCanvasM,hw,H);
+  fitCanvas(nextCanvasM,nw,H);
+  drawMini();
+}
 
 /* ---------------- pieces & SRS ---------------- */
 const SHAPES={
@@ -1165,22 +1228,24 @@ function drawBoard(){
   ctx.globalAlpha=1;ctx.shadowBlur=0;
 }
 function drawMini(){
-  // hold
+  // hold (desktop)
   hctx.clearRect(0,0,120,72);
   if(G.hold)drawMiniPiece(hctx,G.hold,60,36,20,G.canHold?1:.35);
   else{hctx.fillStyle="rgba(160,200,255,.25)";hctx.font="700 11px Orbitron";hctx.textAlign="center";hctx.fillText("EMPTY",60,40);}
-  // next
+  // next (desktop)
   nctx.clearRect(0,0,120,216);
   G.queue.slice(0,3).forEach((t,i)=>{
     drawMiniPiece(nctx,t,60,36+i*72,20,i===0?1:.55);
   });
-  // mobile mirrors
-  hctxM.clearRect(0,0,120,72);
-  if(G.hold)drawMiniPiece(hctxM,G.hold,60,36,20,G.canHold?1:.35);
-  else{hctxM.fillStyle="rgba(160,200,255,.25)";hctxM.font="700 11px Orbitron";hctxM.textAlign="center";hctxM.fillText("EMPTY",60,40);}
-  nctxM.clearRect(0,0,120,216);
+  // mobile mirrors — scale to actual canvas size
+  const hw=holdCanvasM.width/dpr, hh=holdCanvasM.height/dpr;
+  hctxM.clearRect(0,0,hw,hh);
+  if(G.hold)drawMiniPiece(hctxM,G.hold,hw/2,hh/2,Math.min(hw/5.2,hh/3),G.canHold?1:.35);
+  else{hctxM.fillStyle="rgba(160,200,255,.25)";hctxM.font="700 10px Orbitron";hctxM.textAlign="center";hctxM.fillText("EMPTY",hw/2,hh/2+3);}
+  const nw=nextCanvasM.width/dpr, nh=nextCanvasM.height/dpr;
+  nctxM.clearRect(0,0,nw,nh);
   G.queue.slice(0,3).forEach((t,i)=>{
-    drawMiniPiece(nctxM,t,60,36+i*72,20,i===0?1:.55);
+    drawMiniPiece(nctxM,t,nw/6+i*(nw/3),nh/2,Math.min(nw/9,nh/2.4),i===0?1:.55);
   });
 }
 function drawMiniPiece(ctx,type,cx,cy,size,alpha){
@@ -1307,6 +1372,8 @@ setTimeout(()=>{fitBoard();fitStage();},300);
 setTimeout(()=>{fitBoard();},1200);
 // keep board backing resolution in sync with container size (orientation, zoom)
 new ResizeObserver(()=>fitBoard()).observe(document.getElementById("boardWrap"));
+new ResizeObserver(()=>fitMinisM()).observe(document.getElementById("pHoldM"));
+new ResizeObserver(()=>fitMinisM()).observe(document.getElementById("pNextM"));
 (function stars(){
   const s=$("stars");
   for(let i=0;i<70;i++){
