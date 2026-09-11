@@ -78,19 +78,21 @@ function check(name, cond, detail) {
   const d = await dpage.evaluate(() => {
     const b = document.getElementById('boardCanvas').getBoundingClientRect();
     const vw = innerWidth, vh = innerHeight;
+    const disp = id => { const e = document.getElementById(id); return e ? getComputedStyle(e).display : 'missing'; };
     return {
       boardIn: b.top >= 0 && b.left >= 0 && b.right <= vw && b.bottom <= vh,
       board: { w: Math.round(b.width), h: Math.round(b.height) },
       sideLVisible: document.getElementById('sideL').offsetParent !== null,
       sideRVisible: document.getElementById('sideR').offsetParent !== null,
-      holdMHidden: getComputedStyle(document.getElementById('pHoldM')).display === 'none',
-      hudHidden: getComputedStyle(document.getElementById('hudTop')).display === 'none',
-      touchHidden: getComputedStyle(document.getElementById('touch')).display === 'none',
+      sideMHidden: disp('sideM') === 'none',
+      iconBtnsHidden: disp('iconBtns') === 'none',
+      touchHidden: disp('touch') === 'none',
     };
   });
   check('desktop: board on screen', d.boardIn, JSON.stringify(d.board));
   check('desktop: side panels visible', d.sideLVisible && d.sideRVisible);
-  check('desktop: mobile chips hidden', d.holdMHidden && d.hudHidden);
+  check('desktop: mobile side panel hidden', d.sideMHidden);
+  check('desktop: icon buttons hidden', d.iconBtnsHidden);
   check('desktop: touch deck hidden (fine pointer)', d.touchHidden);
   check('desktop: no JS errors', derrors.length === 0, derrors.slice(0, 3).join(' | '));
   // desktop keyboard start

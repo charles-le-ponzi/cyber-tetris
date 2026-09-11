@@ -1,11 +1,11 @@
-/* Tight feedback loop: assert the mobile portrait UI fits the screen.
-   RED on the user's exact symptom (board/buttons don't fit), GREEN when fixed. */
-const { chromium, devices } = require('playwright');
+/* Tight feedback loop: assert the mobile portrait UI (v6: board + side panel)
+   fits the screen. RED on the user's symptom (board/buttons don't fit / grey
+   overlap), GREEN when fixed. */
+const { chromium } = require('playwright');
 const path = require('path');
 
 const FILE = 'file:///' + path.resolve(__dirname, '..', 'index.html').replace(/\\/g, '/');
 
-// representative phones: small, mid, large (portrait)
 const VIEWPORTS = [
   { name: 'iphone-se (375x667)',  width: 375, height: 667 },
   { name: 'iphone-12 (390x844)',  width: 390, height: 844 },
@@ -16,9 +16,8 @@ const VIEWPORTS = [
 
 let failures = 0;
 function check(name, cond, detail) {
-  const tag = cond ? 'PASS' : 'FAIL';
   if (!cond) failures++;
-  console.log(`  [${tag}] ${name}${detail ? ' — ' + detail : ''}`);
+  console.log(`  [${cond ? 'PASS' : 'FAIL'}] ${name}${detail ? ' — ' + detail : ''}`);
 }
 
 (async () => {
@@ -27,58 +26,61 @@ function check(name, cond, detail) {
     console.log(`\n=== ${vp.name} ===`);
     const ctx = await browser.newContext({
       viewport: { width: vp.width, height: vp.height },
-      isMobile: true, hasTouch: true,
-      deviceScaleFactor: 2,
+      isMobile: true, hasTouch: true, deviceScaleFactor: 2,
     });
     const page = await ctx.newPage();
     const errors = [];
     page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
     page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
     await page.goto(FILE, { waitUntil: 'load' });
-    await page.waitForTimeout(1500); // let fitBoard/ResizeObserver settle
+    await page.waitForTimeout(1500);
 
     const data = await page.evaluate(() => {
       const vw = innerWidth, vh = innerHeight;
       const inView = r => r.top >= -1 && r.left >= -1 && r.right <= vw + 1 && r.bottom <= vh + 1;
       const board = document.getElementById('boardCanvas').getBoundingClientRect();
       const touch = document.getElementById('touch').getBoundingClientRect();
-      const hudTop = document.getElementById('hudTop').getBoundingClientRect();
+      const sideM = document.getElementById('sideM').getBoundingClientRect();
+      const holdM = document.getElementById('pHoldM').getBoundingClientRect();
+      const nextM = document.getElementById('pNextM').getBoundingClientRect();
+      const iconBtns = document.getElementById('iconBtns').getBoundingClientRect();
       const btns = [...document.querySelectorAll('#touch button')].map(b => {
         const r = b.getBoundingClientRect();
         return { act: b.dataset.act, inView: inView(r), w: Math.round(r.width), h: Math.round(r.height) };
       });
-      const holdM = document.getElementById('pHoldM').getBoundingClientRect();
-      const nextM = document.getElementById('pNextM').getBoundingClientRect();
-      const stage = document.getElementById('stage').getBoundingClientRect();
+      // is the board frame grey chrome? check boardWrap inner bg is dark/translucent (no metallic gradient)
+      const innerBg = getComputedStyle(document.querySelector('#boardWrap .inner')).background;
       return {
         vw, vh,
         scrollW: document.documentElement.scrollWidth,
         scrollH: document.documentElement.scrollHeight,
         board: { top: Math.round(board.top), bottom: Math.round(board.bottom), left: Math.round(board.left), right: Math.round(board.right), w: Math.round(board.width), h: Math.round(board.height), inView: inView(board) },
         touch: { top: Math.round(touch.top), bottom: Math.round(touch.bottom), inView: inView(touch) },
-        hudTop: { top: Math.round(hudTop.top), bottom: Math.round(hudTop.bottom), inView: inView(hudTop) },
-        holdM: { top: Math.round(holdM.top), bottom: Math.round(holdM.bottom), inView: inView(holdM) },
-        nextM: { top: Math.round(nextM.top), bottom: Math.round(nextM.bottom), inView: inView(nextM) },
-        stage: { top: Math.round(stage.top), bottom: Math.round(stage.bottom) },
+        sideM: { top: Math.round(sideM.top), bottom: Math.round(sideM.bottom), left: Math.round(sideM.left), right: Math.round(sideM.right), inView: inView(sideM) },
+        holdM: { inView: inView(holdM) },
+        nextM: { inView: inView(nextM) },
+        iconBtns: { inView: inView(iconBtns) },
         btns,
-        bodyOverflowY: getComputedStyle(document.body).overflowY,
+        boardRightOfSide: board.right <= sideM.left + 2,
+        sideRightOfBoard: sideM.left >= board.right - 2,
       };
     });
 
     check('no horizontal overflow', data.scrollW <= data.vw, `scrollW=${data.scrollW} vs vw=${data.vw}`);
     check('no vertical overflow', data.scrollH <= data.vh, `scrollH=${data.scrollH} vs vh=${data.vh}`);
-    check('board fully on screen', data.board.inView, `board ${data.board.w}x${data.board.h} top=${data.board.top} bottom=${data.board.bottom}`);
+    check('board fully on screen', data.board.inView, `board ${data.board.w}x${data.board.h}`);
     check('board is 1:2 aspect', Math.abs(data.board.h - data.board.w * 2) <= 2, `${data.board.w}x${data.board.h}`);
     check('board big enough to play', data.board.h >= 300, `h=${data.board.h}`);
+    check('board sits LEFT of side panel', data.boardRightOfSide, `board.right=${data.board.right} side.left=${data.sideM.left}`);
+    check('side panel fully on screen', data.sideM.inView, JSON.stringify(data.sideM));
+    check('hold panel on screen', data.holdM.inView);
+    check('next panel on screen', data.nextM.inView);
+    check('icon buttons on screen', data.iconBtns.inView);
     check('touch deck fully on screen', data.touch.inView, `top=${data.touch.top} bottom=${data.touch.bottom} (vh=${data.vh})`);
-    check('hudTop fully on screen', data.hudTop.inView, `top=${data.hudTop.top} bottom=${data.hudTop.bottom}`);
-    check('hold panel on screen', data.holdM.inView, JSON.stringify(data.holdM));
-    check('next panel on screen', data.nextM.inView, JSON.stringify(data.nextM));
     const badBtns = data.btns.filter(b => !b.inView);
-    check('all 8 touch buttons on screen', badBtns.length === 0, badBtns.length ? badBtns.map(b => b.act).join(',') : '8/8');
-    const tiny = data.btns.filter(b => b.w < 40 || b.h < 36);
-    check('touch buttons thumb-sized (>=40x36)', tiny.length === 0, tiny.length ? tiny.map(b => `${b.act}:${b.w}x${b.h}`).join(',') : 'ok');
-    // board must not be hidden behind the touch deck
+    check('all 6 touch buttons on screen', badBtns.length === 0 && data.btns.length === 6, `${data.btns.length} btns` + (badBtns.length ? ' missing: ' + badBtns.map(b => b.act).join(',') : ''));
+    const tiny = data.btns.filter(b => b.w < 40 || b.h < 34);
+    check('touch buttons thumb-sized (>=40x34)', tiny.length === 0, tiny.length ? tiny.map(b => `${b.act}:${b.w}x${b.h}`).join(',') : 'ok');
     check('board bottom above touch deck top', data.board.bottom <= data.touch.top + 2, `board.bottom=${data.board.bottom} touch.top=${data.touch.top}`);
     check('no JS errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 
