@@ -1174,7 +1174,15 @@ function scheduleStep(step,t){
 function musicTick(){
   if(!M.on||!AC)return;
   const s16=60/M.bpm/4;
-  while(M.nextT<AC.currentTime+.12){
+  const now=AC.currentTime;
+  // Resync if the scheduler fell behind the audio clock (tab backgrounded,
+  // phone locked, or a main-thread stall throttled this setInterval while
+  // AC.currentTime kept running). Without this, the catch-up below would
+  // replay every missed step at once — a wall of past-timed notes — and the
+  // loop point would land mid-burst instead of restarting the track cleanly.
+  // We keep the loop position (M.step) and just re-anchor the clock to now.
+  if(M.nextT<now-0.5)M.nextT=now+0.05;
+  while(M.nextT<now+.12){
     scheduleStep(M.step,M.nextT);
     M.step++;
     M.nextT+=s16;
