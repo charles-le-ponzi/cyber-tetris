@@ -224,10 +224,14 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
 }
 #touch button:active{background:rgba(0,240,255,.25)}
 @media (pointer:coarse){ #touch{display:flex} .keys{display:none} }
-/* ============ MOBILE PORTRAIT LAYOUT (v4) ============
-   Built from the ground up for phones: compact 2-row HUD on top,
-   board centered, hold/next strip, thumb-sized control deck.
-   No transform scaling anywhere; everything fits 100dvh.          */
+/* ============ MOBILE PORTRAIT LAYOUT (v5) ============
+   Immersive full-bleed design: the board owns the screen.
+   - Single-row glass HUD under the logo bar.
+   - Hold / Next float as translucent chips over the board's top corners
+     (the spawn zone, which is empty in play) — no board-width tax.
+   - Control deck is a floating translucent glass bar at the bottom;
+     the board runs edge-to-edge behind it.
+   No transform scaling anywhere; everything fits 100dvh.             */
 #hudTop,#hudBottom{display:none}
 @media (orientation:portrait) and (max-width:760px){
   html,body{height:100dvh}
@@ -238,10 +242,11 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
   }
   #topbar{
     position:fixed;top:0;left:0;right:0;z-index:30;
-    height:calc(34px + env(safe-area-inset-top));
-    padding:calc(6px + env(safe-area-inset-top)) 14px 6px;
+    height:calc(30px + env(safe-area-inset-top));
+    padding:calc(4px + env(safe-area-inset-top)) 14px 4px;
+    background:linear-gradient(180deg, rgba(7,0,15,.85), transparent);
   }
-  #logo{font-size:16px;letter-spacing:.06em;animation:none;
+  #logo{font-size:15px;letter-spacing:.06em;animation:none;
     filter:drop-shadow(0 0 8px rgba(0,240,255,.45))}
   #sysinfo{display:none}
   #sideL,#sideR{display:none}
@@ -250,104 +255,88 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
     flex-direction:column;gap:0;padding:0;align-items:stretch;
     transform:none!important;
     width:100%;height:100%;
-    padding-top:calc(34px + env(safe-area-inset-top));
+    padding-top:calc(30px + env(safe-area-inset-top));
   }
-  /* ---- HUD top: two compact rows, no chrome-frame bloat ---- */
+  /* ---- HUD: one compact glass row ---- */
   #hudTop{
-    order:1;display:flex;flex-direction:column;gap:5px;
-    padding:5px 10px 4px;flex:0 0 auto;
+    order:1;display:flex;flex-direction:row;gap:5px;
+    padding:4px 10px 3px;flex:0 0 auto;
   }
-  .hrow{display:flex;gap:6px}
   .hcell{
     flex:1;min-width:0;position:relative;
-    background:rgba(14,5,32,.72);border-radius:10px;padding:5px 9px 6px;
+    background:rgba(14,5,32,.6);border-radius:9px;padding:3px 8px 4px;
     backdrop-filter:blur(10px);
-    border:1px solid rgba(140,170,210,.35);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.25), 0 2px 6px rgba(0,0,0,.4);
+    border:1px solid rgba(140,170,210,.3);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.22), 0 2px 6px rgba(0,0,0,.35);
     display:flex;flex-direction:column;justify-content:center;gap:1px;
   }
   .hcell .hk{
-    font-family:'Orbitron',sans-serif;font-size:8px;font-weight:700;
-    letter-spacing:.2em;color:rgba(160,200,255,.6);text-transform:uppercase;
+    font-family:'Orbitron',sans-serif;font-size:7px;font-weight:700;
+    letter-spacing:.18em;color:rgba(160,200,255,.55);text-transform:uppercase;
+    line-height:1;
   }
   .hcell .hv{
-    font-family:'Orbitron',monospace;font-weight:700;font-size:16px;line-height:1.15;
+    font-family:'Orbitron',monospace;font-weight:700;font-size:14px;line-height:1.15;
     color:#fff;text-shadow:0 0 10px rgba(0,240,255,.7);
     font-variant-numeric:tabular-nums;white-space:nowrap;
   }
-  .hcell.score{flex:1.7}
+  .hcell.score{flex:1.55}
   .hcell.score .hv{
-    font-size:21px;
+    font-size:17px;
     background:linear-gradient(180deg,#fff,#9fe8ff 55%,#00f0ff);
     -webkit-background-clip:text;background-clip:text;color:transparent;
     filter:drop-shadow(0 0 8px rgba(0,240,255,.55));
   }
   .hcell.gold .hv{color:var(--gold);text-shadow:0 0 10px rgba(255,217,59,.7)}
-  .hcell .bar{height:4px;border-radius:2px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:3px;border:1px solid rgba(0,240,255,.25)}
+  .hcell .bar{height:3px;border-radius:2px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:2px;border:1px solid rgba(0,240,255,.25)}
   .hcell .bar i{display:block;height:100%;width:0%;border-radius:2px;transition:width .3s ease;background:linear-gradient(90deg,var(--violet),var(--magenta),var(--cyan));box-shadow:0 0 8px rgba(255,47,214,.8)}
-  /* ---- board area: adaptive grid.
-       narrow (default): board on top, hold+next row below.
-       wide  (>=520px):  hold | board | next in one row, using side width.
-       The board is always the height-capped 1:2 element; the grid just
-       decides where hold/next live so no screen has dead space.       */
+  /* ---- board area: full-bleed. The board is the 1:2 element;
+       hold/next float over its top corners (spawn zone). ---- */
   #boardArea{
-    order:2;flex:1 1 auto;min-height:0;
-    display:grid;gap:6px;padding:4px 10px;
-    grid-template-columns:1fr 1fr;
-    grid-template-rows:minmax(0,1fr) auto;
-    grid-template-areas:"board board" "hold next";
+    order:2;flex:1 1 auto;min-height:0;position:relative;
+    display:flex;align-items:center;justify-content:center;
+    padding:0;
+    /* reserve the floating deck's height so the board centers in the
+       space ABOVE it and its bottom rows stay visible */
+    padding-bottom:calc(112px + env(safe-area-inset-bottom));
   }
   #boardWrap{
-    grid-area:board;min-height:0;
+    min-height:0;
     display:flex;align-items:center;justify-content:center;
     padding:0;overflow:hidden;
-    /* lock to grid cell so fitBoard measures real available space */
     height:100%;width:100%;
   }
-  #pHoldM{grid-area:hold;display:flex;flex-direction:column;justify-content:center}
-  #pNextM{grid-area:next;display:flex;flex-direction:column;justify-content:center}
-  #boardWrap .inner{padding:4px;height:100%;display:flex;align-items:center;justify-content:center}
-  #boardWrap .inner>div{height:100%;display:flex;align-items:center;justify-content:center}
+  #boardWrap .inner{padding:3px;height:100%;display:flex;align-items:center;justify-content:center}
+  .boardBox{position:relative;display:flex;align-items:center;justify-content:center}
   #boardCanvas{touch-action:none;display:block}
-  /* hold / next panels (mobile) */
+  /* hold / next: floating translucent chips over the board */
   #pHoldM,#pNextM{
-    min-width:0;padding:5px 8px;border-radius:10px;
-    background:rgba(14,5,32,.72);backdrop-filter:blur(10px);
-    border:1px solid rgba(140,170,210,.35);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.25);
+    position:absolute;top:6px;z-index:12;
+    display:flex;flex-direction:column;justify-content:center;
+    min-width:0;padding:4px 7px 5px;border-radius:10px;
+    background:rgba(10,4,24,.42);backdrop-filter:blur(8px);
+    border:1px solid rgba(140,170,210,.38);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.2), 0 2px 10px rgba(0,0,0,.35);
   }
   #pHoldM::before,#pNextM::before{display:none}
-  #pHoldM .inner,#pNextM .inner{
-    padding:2px 0 4px;border-radius:6px;
-    background:linear-gradient(180deg, rgba(10,4,26,.9), rgba(24,8,48,.85));
-  }
+  #pHoldM .inner,#pNextM .inner{padding:0;border-radius:6px;background:none}
   #pHoldM .inner::before,#pNextM .inner::before{display:none}
-  #pHoldM .label,#pNextM .label{font-size:8px;margin:2px 0 3px;letter-spacing:.25em}
+  #pHoldM .label,#pNextM .label{font-size:7px;margin:0 0 2px;letter-spacing:.25em}
   #pHoldM canvas.mini,#pNextM canvas.mini{display:block;margin:0 auto}
-  /* wide (>=560px): side-by-side. Hold/Next become vertical columns flanking
-     the board. Below this width the flanking panels eat too much board width
-     (a 390px phone gets only ~166px of board flanked vs ~370px with hold/next
-     below), so phones keep the below layout. */
-  @media (min-width:560px){
-    #boardArea{
-      grid-template-columns:112px minmax(0,1fr) 112px;
-      grid-template-rows:minmax(0,1fr);
-      grid-template-areas:"hold board next";
-    }
-    #pHoldM,#pNextM{justify-content:flex-start;padding:6px 8px}
-    #pHoldM .inner,#pNextM .inner{height:100%;padding:4px 0 6px;display:flex;align-items:center;justify-content:center}
-  }
-  /* ---- control deck: 2 rows of 4, thumb zone, pinned bottom ---- */
+  #pHoldM{left:8px}
+  #pNextM{right:8px}
+  /* ---- control deck: floating translucent glass bar, 2 rows of 4 ---- */
   #touch{
-    display:grid;grid-template-columns:repeat(4,1fr);gap:7px;
-    padding:8px 10px calc(10px + env(safe-area-inset-bottom));
+    display:grid;grid-template-columns:repeat(4,1fr);gap:6px;
+    padding:6px 8px calc(8px + env(safe-area-inset-bottom));
     flex:0 0 auto;position:fixed;bottom:0;left:0;right:0;z-index:25;
-    background:linear-gradient(transparent,rgba(7,0,15,.97) 26%);
+    background:linear-gradient(180deg, rgba(7,0,15,0) 0%, rgba(7,0,15,.55) 34%, rgba(7,0,15,.88) 100%);
+    backdrop-filter:blur(6px);
   }
   #touch button{
-    width:100%;height:54px;border-radius:14px;border:1px solid rgba(0,240,255,.4);
-    background:rgba(10,4,26,.75);color:var(--cyan);font-size:20px;font-family:'Orbitron',sans-serif;
-    backdrop-filter:blur(8px);box-shadow:0 0 12px rgba(0,240,255,.18), inset 0 1px 0 rgba(255,255,255,.15);
+    width:100%;height:46px;border-radius:13px;border:1px solid rgba(0,240,255,.38);
+    background:rgba(10,4,26,.5);color:var(--cyan);font-size:18px;font-family:'Orbitron',sans-serif;
+    backdrop-filter:blur(8px);box-shadow:0 0 12px rgba(0,240,255,.16), inset 0 1px 0 rgba(255,255,255,.14);
     touch-action:manipulation;user-select:none;-webkit-user-select:none;
   }
   #touch button:active{background:rgba(0,240,255,.28);transform:scale(.95)}
@@ -355,8 +344,6 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
   #touch button[data-act="drop"]:active{background:rgba(255,47,214,.3)}
   #touch button[data-act="rotate"]{color:var(--lime);border-color:rgba(200,255,0,.5);box-shadow:0 0 12px rgba(200,255,0,.22)}
   #touch button[data-act="rotate"]:active{background:rgba(200,255,0,.28)}
-  /* reserve space so board never hides behind the deck */
-  #stage{padding-bottom:124px}
   .keys{display:none}
   .overlay{gap:12px;padding:16px 10px;z-index:9}
   #boardWrap .overlay{align-items:center;justify-content:center;top:50%;left:50%;transform:translate(-50%,-50%);width:min(92%,340px)}
@@ -385,16 +372,12 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
 </header>
 
 <div id="fitWrap"><main id="stage">
-  <!-- MOBILE PORTRAIT: HUD top (row 1: score/level, row 2: lines/high) -->
+  <!-- MOBILE PORTRAIT: single-row glass HUD (score / level / lines / high) -->
   <div id="hudTop">
-    <div class="hrow">
-      <div class="hcell score"><span class="hk">Score</span><span class="hv" id="msScore">0000000</span></div>
-      <div class="hcell"><span class="hk">Level</span><span class="hv" id="msLevel">01</span><div class="bar"><i id="msLevelBar"></i></div></div>
-    </div>
-    <div class="hrow">
-      <div class="hcell"><span class="hk">Lines</span><span class="hv" id="msLines">0000</span></div>
-      <div class="hcell gold"><span class="hk">High</span><span class="hv" id="msHigh">0000000</span></div>
-    </div>
+    <div class="hcell score"><span class="hk">Score</span><span class="hv" id="msScore">0000000</span></div>
+    <div class="hcell"><span class="hk">Level</span><span class="hv" id="msLevel">01</span><div class="bar"><i id="msLevelBar"></i></div></div>
+    <div class="hcell"><span class="hk">Lines</span><span class="hv" id="msLines">0000</span></div>
+    <div class="hcell gold"><span class="hk">High</span><span class="hv" id="msHigh">0000000</span></div>
   </div>
   <!-- LEFT: score / level / sys -->
   <div class="side" id="sideL">
@@ -419,19 +402,23 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
     </div></div>
   </div>
 
-  <!-- MOBILE PORTRAIT: board area.
-       narrow: board on top, hold+next row below.
-       wide:   hold | board | next in one row (uses spare side width). -->
+  <!-- MOBILE PORTRAIT: full-bleed board area.
+       boardBox is sized to the canvas; hold/next float as translucent
+       chips over the board's top corners (the spawn zone). -->
   <div id="boardArea">
-    <div class="panel" id="pHoldM"><div class="inner">
-      <div class="label">Hold</div>
-      <canvas class="mini" id="holdCanvasM" width="120" height="48"></canvas>
-    </div></div>
     <div class="panel" id="boardWrap"><div class="inner" style="padding:6px">
-      <div style="position:relative">
+      <div class="boardBox">
+        <div class="panel" id="pHoldM"><div class="inner">
+          <div class="label">Hold</div>
+          <canvas class="mini" id="holdCanvasM" width="120" height="48"></canvas>
+        </div></div>
         <canvas id="boardCanvas"></canvas>
         <div id="flash"></div>
         <div id="popupLayer"></div>
+        <div class="panel" id="pNextM"><div class="inner">
+          <div class="label">Next</div>
+          <canvas class="mini" id="nextCanvasM" width="220" height="48"></canvas>
+        </div></div>
         <div class="overlay" id="menuOverlay">
           <h2>TETRA//Y2K</h2>
           <p>SYSTEM BOOT COMPLETE<br>ALL BLOCKS NOMINAL</p>
@@ -454,10 +441,6 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
           <button class="btn" id="retryBtn">↻ Reboot</button>
         </div>
       </div>
-    </div></div>
-    <div class="panel" id="pNextM"><div class="inner">
-      <div class="label">Next</div>
-      <canvas class="mini" id="nextCanvasM" width="220" height="48"></canvas>
     </div></div>
   </div>
 
@@ -505,10 +488,13 @@ function fitCanvas(c,w,h){c.width=w*dpr;c.height=h*dpr;c.style.width=w+"px";c.st
 function fitBoard(){
   const isPortrait=window.matchMedia("(orientation:portrait) and (max-width:760px)").matches;
   if(isPortrait){
-    // board must keep 1:2 aspect; fit into the flexed boardWrap area
+    // board must keep 1:2 aspect; fit into the flexed boardWrap area.
+    // boardArea's padding-bottom already reserves the floating deck, so
+    // boardWrap's rect is the clear space above it — just add a small buffer.
     const wrap=$("boardWrap");
     const r=wrap.getBoundingClientRect();
-    const availW=Math.max(120,r.width-20), availH=Math.max(240,r.height-20);
+    const availW=Math.max(120,r.width-20);
+    const availH=Math.max(200,r.height-16);
     const w=Math.floor(Math.min(availW, availH/2));
     const h=Math.floor(w*2);
     boardCanvas.style.width=w+"px";
@@ -540,7 +526,6 @@ function fitBoard(){
     fitCanvas(boardCanvas, COLS*cell, ROWS*cell);
   }
 }
-fitBoard();
 fitCanvas(holdCanvas,120,72);
 fitCanvas(nextCanvas,120,216);
 fitCanvas(holdCanvasM,120,72);
@@ -549,24 +534,14 @@ function fitMinisM(){
   if(!window.matchMedia("(orientation:portrait) and (max-width:760px)").matches)return;
   const holdP=$("pHoldM"), nextP=$("pNextM");
   if(!holdP||!nextP)return;
-  const wide=window.matchMedia("(min-width:560px)").matches;
-  if(wide){
-    // hold/next are vertical columns flanking the board
-    const hw=Math.max(64,Math.floor(holdP.clientWidth-16));
-    const nw=Math.max(64,Math.floor(nextP.clientWidth-16));
-    const hh=Math.max(120,Math.floor(holdP.clientHeight-16));
-    const nh=Math.max(200,Math.floor(nextP.clientHeight-16));
-    fitCanvas(holdCanvasM,hw,hh);
-    fitCanvas(nextCanvasM,nw,nh);
-  }else{
-    // hold/next are a horizontal row below the board
-    const H=44;
-    const hw=Math.max(56,Math.floor(holdP.clientWidth-16));
-    const nw=Math.max(120,Math.floor(nextP.clientWidth-16));
-    fitCanvas(holdCanvasM,hw,H);
-    fitCanvas(nextCanvasM,nw,H);
-  }
-  drawMini();
+  // Floating chips scale with the board so they never swallow the playfield.
+  const bw=boardCanvas.clientWidth||200;
+  const holdSide=Math.round(Math.max(34,Math.min(56,bw*0.30)));
+  const nextW=Math.round(Math.max(84,Math.min(132,bw*0.54)));
+  const nextH=Math.round(Math.max(30,Math.min(44,bw*0.22)));
+  fitCanvas(holdCanvasM,holdSide,holdSide);
+  fitCanvas(nextCanvasM,nextW,nextH);
+  if(typeof G!=="undefined"&&G)drawMini();
 }
 
 /* ---------------- pieces & SRS ---------------- */
