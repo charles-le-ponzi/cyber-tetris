@@ -358,7 +358,8 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
   /* reserve space so board never hides behind the deck */
   #stage{padding-bottom:124px}
   .keys{display:none}
-  .overlay{gap:12px;padding:16px 10px}
+  .overlay{gap:12px;padding:16px 10px;z-index:9}
+  #boardWrap .overlay{align-items:center;justify-content:center;top:50%;left:50%;transform:translate(-50%,-50%);width:min(92%,340px)}
   .overlay h2{font-size:19px;letter-spacing:.06em;white-space:nowrap}
   .overlay p{font-size:11px;line-height:1.8;letter-spacing:.14em}
   .btn{padding:12px 22px;font-size:12px;letter-spacing:.18em;touch-action:manipulation}
