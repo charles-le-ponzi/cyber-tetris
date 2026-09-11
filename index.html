@@ -156,6 +156,10 @@ body{flex-direction:column}
 }
 canvas.mini{display:block;width:100%;image-rendering:pixelated}
 /* ============ BOARD ============ */
+/* boardArea wraps the board + (mobile) hold/next. In landscape it just
+   centers the board and hides the mobile hold/next panels. */
+#boardArea{display:flex;align-items:center;justify-content:center;min-height:0}
+#pHoldM,#pNextM{display:none}
 #boardWrap{position:relative}
 #boardCanvas{
   display:block;border-radius:8px;
@@ -281,29 +285,58 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
   .hcell.gold .hv{color:var(--gold);text-shadow:0 0 10px rgba(255,217,59,.7)}
   .hcell .bar{height:4px;border-radius:2px;background:rgba(255,255,255,.09);overflow:hidden;margin-top:3px;border:1px solid rgba(0,240,255,.25)}
   .hcell .bar i{display:block;height:100%;width:0%;border-radius:2px;transition:width .3s ease;background:linear-gradient(90deg,var(--violet),var(--magenta),var(--cyan));box-shadow:0 0 8px rgba(255,47,214,.8)}
-  /* ---- board: flexes to fill the middle, centered ---- */
-  #boardWrap{order:2;flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;padding:4px 12px}
+  /* ---- board area: adaptive grid.
+       narrow (default): board on top, hold+next row below.
+       wide  (>=520px):  hold | board | next in one row, using side width.
+       The board is always the height-capped 1:2 element; the grid just
+       decides where hold/next live so no screen has dead space.       */
+  #boardArea{
+    order:2;flex:1 1 auto;min-height:0;
+    display:grid;gap:6px;padding:4px 10px;
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:minmax(0,1fr) auto;
+    grid-template-areas:"board board" "hold next";
+  }
+  #boardWrap{
+    grid-area:board;min-height:0;
+    display:flex;align-items:center;justify-content:center;
+    padding:0;overflow:hidden;
+    /* lock to grid cell so fitBoard measures real available space */
+    height:100%;width:100%;
+  }
+  #pHoldM{grid-area:hold;display:flex;flex-direction:column;justify-content:center}
+  #pNextM{grid-area:next;display:flex;flex-direction:column;justify-content:center}
   #boardWrap .inner{padding:4px;height:100%;display:flex;align-items:center;justify-content:center}
   #boardWrap .inner>div{height:100%;display:flex;align-items:center;justify-content:center}
   #boardCanvas{touch-action:none;display:block}
-  /* ---- hold / next strip: horizontal, compact ---- */
-  #hudBottom{order:3;display:flex;gap:6px;padding:4px 10px 5px;flex:0 0 auto}
-  #hudBottom .panel{
-    flex:1;min-width:0;padding:5px 8px;border-radius:10px;
+  /* hold / next panels (mobile) */
+  #pHoldM,#pNextM{
+    min-width:0;padding:5px 8px;border-radius:10px;
     background:rgba(14,5,32,.72);backdrop-filter:blur(10px);
     border:1px solid rgba(140,170,210,.35);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.25);
   }
-  #hudBottom .panel::before{display:none}
-  #hudBottom .panel .inner{
-    padding:0;border-radius:6px;
+  #pHoldM::before,#pNextM::before{display:none}
+  #pHoldM .inner,#pNextM .inner{
+    padding:2px 0 4px;border-radius:6px;
     background:linear-gradient(180deg, rgba(10,4,26,.9), rgba(24,8,48,.85));
   }
-  #hudBottom .panel .inner::before{display:none}
-  #hudBottom .label{font-size:8px;margin:3px 0 2px;letter-spacing:.25em}
-  #hudBottom canvas.mini{display:block;margin:0 auto}
-  #pHoldM{flex:1}
-  #pNextM{flex:2.2}
+  #pHoldM .inner::before,#pNextM .inner::before{display:none}
+  #pHoldM .label,#pNextM .label{font-size:8px;margin:2px 0 3px;letter-spacing:.25em}
+  #pHoldM canvas.mini,#pNextM canvas.mini{display:block;margin:0 auto}
+  /* wide (>=560px): side-by-side. Hold/Next become vertical columns flanking
+     the board. Below this width the flanking panels eat too much board width
+     (a 390px phone gets only ~166px of board flanked vs ~370px with hold/next
+     below), so phones keep the below layout. */
+  @media (min-width:560px){
+    #boardArea{
+      grid-template-columns:112px minmax(0,1fr) 112px;
+      grid-template-rows:minmax(0,1fr);
+      grid-template-areas:"hold board next";
+    }
+    #pHoldM,#pNextM{justify-content:flex-start;padding:6px 8px}
+    #pHoldM .inner,#pNextM .inner{height:100%;padding:4px 0 6px;display:flex;align-items:center;justify-content:center}
+  }
   /* ---- control deck: 2 rows of 4, thumb zone, pinned bottom ---- */
   #touch{
     display:grid;grid-template-columns:repeat(4,1fr);gap:7px;
@@ -385,41 +418,41 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
     </div></div>
   </div>
 
-  <!-- CENTER: board -->
-  <div class="panel" id="boardWrap"><div class="inner" style="padding:6px">
-    <div style="position:relative">
-      <canvas id="boardCanvas"></canvas>
-      <div id="flash"></div>
-      <div id="popupLayer"></div>
-      <div class="overlay" id="menuOverlay">
-        <h2>TETRA//Y2K</h2>
-        <p>SYSTEM BOOT COMPLETE<br>ALL BLOCKS NOMINAL</p>
-        <button class="btn" id="startBtn">▶ Insert Coin</button>
-        <div class="keys">
-          <b>◀ ▶</b> move &nbsp; <b>▼</b> soft drop &nbsp; <b>SPACE</b> hard drop<br>
-          <b>▲ / X</b> rotate cw &nbsp; <b>Z</b> rotate ccw &nbsp; <b>C</b> hold<br>
-          <b>P</b> pause &nbsp; <b>M</b> mute &nbsp; <b>ENTER</b> start
-        </div>
-      </div>
-      <div class="overlay hidden" id="pauseOverlay">
-        <h2>PAUSED</h2>
-        <p>SYSTEM ON STANDBY</p>
-        <button class="btn ghosty" id="resumeBtn">Resume</button>
-      </div>
-      <div class="overlay hidden" id="overOverlay">
-        <h2 id="overTitle">GAME OVER</h2>
-        <p id="overStats">SCORE 0000000</p>
-        <div class="blink" id="newRecord" style="display:none;font-family:'Orbitron';letter-spacing:.3em">★ NEW RECORD ★</div>
-        <button class="btn" id="retryBtn">↻ Reboot</button>
-      </div>
-    </div>
-  </div></div>
-
-  <!-- MOBILE PORTRAIT: compact bottom strip (hold + next in one row) -->
-  <div id="hudBottom">
+  <!-- MOBILE PORTRAIT: board area.
+       narrow: board on top, hold+next row below.
+       wide:   hold | board | next in one row (uses spare side width). -->
+  <div id="boardArea">
     <div class="panel" id="pHoldM"><div class="inner">
       <div class="label">Hold</div>
       <canvas class="mini" id="holdCanvasM" width="120" height="48"></canvas>
+    </div></div>
+    <div class="panel" id="boardWrap"><div class="inner" style="padding:6px">
+      <div style="position:relative">
+        <canvas id="boardCanvas"></canvas>
+        <div id="flash"></div>
+        <div id="popupLayer"></div>
+        <div class="overlay" id="menuOverlay">
+          <h2>TETRA//Y2K</h2>
+          <p>SYSTEM BOOT COMPLETE<br>ALL BLOCKS NOMINAL</p>
+          <button class="btn" id="startBtn">▶ Insert Coin</button>
+          <div class="keys">
+            <b>◀ ▶</b> move &nbsp; <b>▼</b> soft drop &nbsp; <b>SPACE</b> hard drop<br>
+            <b>▲ / X</b> rotate cw &nbsp; <b>Z</b> rotate ccw &nbsp; <b>C</b> hold<br>
+            <b>P</b> pause &nbsp; <b>M</b> mute &nbsp; <b>ENTER</b> start
+          </div>
+        </div>
+        <div class="overlay hidden" id="pauseOverlay">
+          <h2>PAUSED</h2>
+          <p>SYSTEM ON STANDBY</p>
+          <button class="btn ghosty" id="resumeBtn">Resume</button>
+        </div>
+        <div class="overlay hidden" id="overOverlay">
+          <h2 id="overTitle">GAME OVER</h2>
+          <p id="overStats">SCORE 0000000</p>
+          <div class="blink" id="newRecord" style="display:none;font-family:'Orbitron';letter-spacing:.3em">★ NEW RECORD ★</div>
+          <button class="btn" id="retryBtn">↻ Reboot</button>
+        </div>
+      </div>
     </div></div>
     <div class="panel" id="pNextM"><div class="inner">
       <div class="label">Next</div>
@@ -504,11 +537,23 @@ function fitMinisM(){
   if(!window.matchMedia("(orientation:portrait) and (max-width:760px)").matches)return;
   const holdP=$("pHoldM"), nextP=$("pNextM");
   if(!holdP||!nextP)return;
-  const H=44;
-  const hw=Math.max(56,Math.floor(holdP.clientWidth-16));
-  const nw=Math.max(120,Math.floor(nextP.clientWidth-16));
-  fitCanvas(holdCanvasM,hw,H);
-  fitCanvas(nextCanvasM,nw,H);
+  const wide=window.matchMedia("(min-width:560px)").matches;
+  if(wide){
+    // hold/next are vertical columns flanking the board
+    const hw=Math.max(64,Math.floor(holdP.clientWidth-16));
+    const nw=Math.max(64,Math.floor(nextP.clientWidth-16));
+    const hh=Math.max(120,Math.floor(holdP.clientHeight-16));
+    const nh=Math.max(200,Math.floor(nextP.clientHeight-16));
+    fitCanvas(holdCanvasM,hw,hh);
+    fitCanvas(nextCanvasM,nw,nh);
+  }else{
+    // hold/next are a horizontal row below the board
+    const H=44;
+    const hw=Math.max(56,Math.floor(holdP.clientWidth-16));
+    const nw=Math.max(120,Math.floor(nextP.clientWidth-16));
+    fitCanvas(holdCanvasM,hw,H);
+    fitCanvas(nextCanvasM,nw,H);
+  }
   drawMini();
 }
 
@@ -1244,9 +1289,17 @@ function drawMini(){
   else{hctxM.fillStyle="rgba(160,200,255,.25)";hctxM.font="700 10px Orbitron";hctxM.textAlign="center";hctxM.fillText("EMPTY",hw/2,hh/2+3);}
   const nw=nextCanvasM.width/dpr, nh=nextCanvasM.height/dpr;
   nctxM.clearRect(0,0,nw,nh);
-  G.queue.slice(0,3).forEach((t,i)=>{
-    drawMiniPiece(nctxM,t,nw/6+i*(nw/3),nh/2,Math.min(nw/9,nh/2.4),i===0?1:.55);
-  });
+  if(nh>=nw){
+    // wide layout: vertical column of 3
+    G.queue.slice(0,3).forEach((t,i)=>{
+      drawMiniPiece(nctxM,t,nw/2,nh/6+i*(nh/3),Math.min(nw/5.2,nh/9),i===0?1:.55);
+    });
+  }else{
+    // narrow layout: horizontal row of 3
+    G.queue.slice(0,3).forEach((t,i)=>{
+      drawMiniPiece(nctxM,t,nw/6+i*(nw/3),nh/2,Math.min(nw/9,nh/2.4),i===0?1:.55);
+    });
+  }
 }
 function drawMiniPiece(ctx,type,cx,cy,size,alpha){
   const sh=SHAPES[type];
