@@ -755,7 +755,8 @@ function levelUp(){
 }
 function gameOver(){
   G.state="over";
-  musicStop();
+  // Music keeps playing — no stop, no restart on retry, so the track is
+  // constant across game over / retry with zero gap.
   sfx.gameOver();
   shake(14);
   const record=G.score>G.hi;
