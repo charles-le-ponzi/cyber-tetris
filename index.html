@@ -268,9 +268,10 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
     transform:none!important;
     width:100%;height:100%;
     padding-top:calc(34px + env(safe-area-inset-top));
-    /* reserve the floating deck's real height (fitBoard sets --deckH) so the
-       board never hides behind it */
-    padding-bottom:calc(var(--deckH,112px) + env(safe-area-inset-bottom));
+    /* No bottom reservation needed: the touch deck is an in-flow flex item
+       (body = flex column: #fitWrap flex:1 + #touch flex:0 0 auto), so the
+       board area is always exactly the space above the deck — the board can
+       never overlap it, even as the mobile dynamic viewport resizes. */
   }
   /* ---- board area: board (left) + side panel (right) ---- */
   #boardArea{
@@ -337,11 +338,15 @@ canvas.mini{display:block;width:100%;image-rendering:pixelated}
   #sideM #pHoldM .inner,#sideM #pNextM .inner{padding:3px 5px 5px;align-items:center;justify-content:center;height:100%}
   #sideM .label{font-size:8px;margin:0 0 3px;letter-spacing:.25em;align-self:flex-start}
   #sideM canvas.mini{display:block;margin:0 auto}
-  /* ---- touch deck: full-width HOLD + 5-button row, translucent ---- */
+  /* ---- touch deck: full-width HOLD + 5-button row, translucent.
+     In-flow (NOT position:fixed): as the last flex item of body it sits
+     exactly at the bottom of the screen and #fitWrap (flex:1) shrinks to
+     the space above it, so the board can never be hidden behind the deck —
+     even when the mobile dynamic viewport changes (URL bar / safe areas). */
   #touch{
     display:grid;grid-template-columns:repeat(5,1fr);gap:6px;
     padding:6px 8px calc(8px + env(safe-area-inset-bottom));
-    flex:0 0 auto;position:fixed;bottom:0;left:0;right:0;z-index:25;
+    flex:0 0 auto;position:relative;z-index:25;
     background:linear-gradient(180deg, rgba(7,0,15,0) 0%, rgba(7,0,15,.45) 30%, rgba(7,0,15,.78) 100%);
     backdrop-filter:blur(5px);
   }
@@ -508,12 +513,8 @@ function fitBoard(){
   if(isPortrait){
     // board (left) + side panel (right). The board keeps its 1:2 aspect and
     // fits the space left of the side panel. boardArea's height already
-    // excludes the floating deck (stage reserves it via padding-bottom).
-    // Keep the reservation in sync with the deck's real height.
-    const deckH=$("touch").getBoundingClientRect().height;
-    const stage=$("stage");
-    const cur=parseFloat(getComputedStyle(stage).getPropertyValue("--deckH"))||0;
-    if(Math.abs(cur-deckH)>1)stage.style.setProperty("--deckH",deckH+"px");
+    // excludes the touch deck (the deck is an in-flow flex item, so the
+    // board area is exactly the space above it) — no manual reservation.
     const area=$("boardArea").getBoundingClientRect();
     const side=$("sideM");
     const sideW = side ? side.getBoundingClientRect().width : 0;
