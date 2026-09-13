@@ -1456,8 +1456,14 @@ addEventListener("resize",()=>{fitBoard();fitStage();});
 addEventListener("load",()=>{fitBoard();fitStage();});
 setTimeout(()=>{fitBoard();fitStage();},300);
 setTimeout(()=>{fitBoard();},1200);
-// keep board backing resolution in sync with container size (orientation, zoom)
-new ResizeObserver(()=>fitBoard()).observe(document.getElementById("boardWrap"));
+// keep board backing resolution in sync with the available space.
+// Watch boardArea (NOT boardWrap): boardWrap's size is driven by the fixed
+// canvas, so it never shrinks when the board *area* does — e.g. when the
+// Orbitron webfont loads and the touch deck grows taller, or a safe-area
+// shift. Watching boardArea (whose height is set by flex, not the canvas)
+// re-fits the board whenever the real available space changes, so the board
+// can never overflow and hide the NEXT panel / deck.
+new ResizeObserver(()=>fitBoard()).observe(document.getElementById("boardArea"));
 new ResizeObserver(()=>fitMinisM()).observe(document.getElementById("pHoldM"));
 new ResizeObserver(()=>fitMinisM()).observe(document.getElementById("pNextM"));
 (function stars(){
